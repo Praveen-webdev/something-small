@@ -82,10 +82,13 @@ with the seeds — then dissolve before the end card. Carried, then released.
 In-memory only; "never saved or sent" stays literally true. Falls back to today's
 copy if she typed nothing, or if she ticked "someone's nearby".
 
-## 8. The reveal — end-card signature
-At the `end` phase, after the seeds land: the wordmark + seed mark fade in centred
-inside the end card as a signature, hold a beat, then settle into the header position
-for the rest of the session. `document.title` swaps at the same beat.
+## 8. The reveal — the wordmark arrives in the header
+At the `end` phase, after the seeds land, the wordmark + seed mark fade into the header
+at +350ms and the greeting follows at +1300ms, so the name is the last thing to appear.
+`document.title` swaps at the same beat, and the mark stays for the rest of the session.
+
+Revised: an earlier version also placed a large centred copy of the wordmark inside the
+end card. Two wordmarks on one screen competed, and the header alone carries it.
 
 ## 7b. The meadow answers her breath
 `breath.js` already computed a live RMS every 32ms and threw it away, reporting only the
