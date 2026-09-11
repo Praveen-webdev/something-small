@@ -1,4 +1,4 @@
-export const createBreathListener = ({ onBlow, onInterrupted }) => {
+export const createBreathListener = ({ onBlow, onInterrupted, onLevel }) => {
   const AudioContext = window.AudioContext || window.webkitAudioContext;
   if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia || !AudioContext) {
     throw new Error('MicrophoneUnavailable');
@@ -14,6 +14,7 @@ export const createBreathListener = ({ onBlow, onInterrupted }) => {
   let baseline = 0.004;
   let aboveThresholdSince = 0;
   let lastSample = 0;
+  let level = 0;
 
   const stop = () => {
     stopped = true;
@@ -66,6 +67,10 @@ export const createBreathListener = ({ onBlow, onInterrupted }) => {
           return;
         }
         const threshold = Math.max(0.018, Math.min(0.12, baseline * 3.2));
+        // Reported for the meadow to answer to. Smoothed so the seedhead breathes rather
+        // than flickers, and deliberately separate from the release decision below.
+        level = level * 0.62 + Math.min(1, volume / (threshold * 1.25)) * 0.38;
+        onLevel?.(level);
         if (volume <= threshold) {
           aboveThresholdSince = 0;
           return;

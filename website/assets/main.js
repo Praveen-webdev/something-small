@@ -44,6 +44,7 @@ let secret = false;
 let revealed = false;
 let echoAnimation = null;
 let spotTimer = 0;
+let swellFrame = 0;
 
 const toGrowth = (amount) => {
   for (let index = 1; index < growthAnchors.length; index += 1) {
@@ -83,6 +84,8 @@ const stopMicrophone = () => {
   requestId += 1;
   breathListener?.stop();
   breathListener = null;
+  meadow?.setState({ breath: 0 });
+  sound?.setBreath(0);
 };
 
 const clearEcho = () => {
@@ -148,6 +151,8 @@ const measure = () => {
 
 const returnToWish = () => {
   clearTimeout(timer);
+  cancelAnimationFrame(swellFrame);
+  swellFrame = 0;
   stopMicrophone();
   clearEcho();
   phase = 'growing';
@@ -252,10 +257,35 @@ const releaseSeeds = () => {
   flightProgress = 0;
   setScene('flight');
   setControls();
-  meadow?.setState({ growth: 1 });
+  meadow?.setState({ growth: 1, breath: 0 });
+  sound?.gust(1);
   navigator.vibrate?.(14);
   echoWish(wish);
   flightFrame = requestAnimationFrame(animateFlight);
+};
+
+// Tapping should feel like a breath too, or the fallback path is plainly the poorer
+// one: the seedhead leans and the wind rises for a beat before anything lets go.
+const tapRelease = () => {
+  if (phase !== 'listening' || swellFrame) return;
+  const started = performance.now();
+  const duration = reducedMotion.matches ? 180 : 620;
+  const step = (timestamp) => {
+    if (phase !== 'listening') {
+      swellFrame = 0;
+      return;
+    }
+    const amount = Math.min(1, (timestamp - started) / duration);
+    meadow?.setState({ breath: amount });
+    sound?.setBreath(amount);
+    if (amount < 1) {
+      swellFrame = requestAnimationFrame(step);
+      return;
+    }
+    swellFrame = 0;
+    releaseSeeds();
+  };
+  swellFrame = requestAnimationFrame(step);
 };
 
 const beginListening = () => {
@@ -308,6 +338,13 @@ const requestMicrophone = async () => {
   try {
     breathListener = createBreathListener({
       onBlow: releaseSeeds,
+      // She should see the seedhead answer her before anything is released, so the
+      // moment feels like a conversation rather than a trigger being tripped.
+      onLevel: (level) => {
+        if (phase !== 'listening') return;
+        meadow?.setState({ breath: level });
+        sound?.setBreath(level);
+      },
       onInterrupted: () => {
         stopMicrophone();
         microphoneMessage = messages.microphoneInterrupted;
@@ -338,6 +375,8 @@ const useTap = () => {
 const replay = () => {
   clearTimeout(timer);
   clearTimeout(spotTimer);
+  cancelAnimationFrame(swellFrame);
+  swellFrame = 0;
   cancelAnimationFrame(flightFrame);
   stopMicrophone();
   clearEcho();
@@ -425,7 +464,7 @@ elements.threshold.addEventListener('keydown', (event) => {
 elements.soundToggle.addEventListener('click', () => setMuted(elements.soundToggle.getAttribute('aria-pressed') === 'true'));
 elements.microphoneButton.addEventListener('click', requestMicrophone);
 elements.tapButton.addEventListener('click', useTap);
-elements.blowButton.addEventListener('click', releaseSeeds);
+elements.blowButton.addEventListener('click', tapRelease);
 elements.cancelButton.addEventListener('click', returnToWish);
 elements.replaySpot.addEventListener('click', replay);
 window.addEventListener('scroll', () => {
@@ -440,6 +479,7 @@ window.addEventListener('pagehide', () => {
   clearTimeout(timer);
   cancelAnimationFrame(flightFrame);
   cancelAnimationFrame(scrollFrame);
+  cancelAnimationFrame(swellFrame);
   clearTimeout(spotTimer);
 });
 window.addEventListener('pageshow', (event) => {

@@ -92,6 +92,17 @@ At the `end` phase, after the seeds land: the wordmark + seed mark fade in centr
 inside the end card as a signature, hold a beat, then settle into the header position
 for the rest of the session. `document.title` swaps at the same beat.
 
+## 7b. The meadow answers her breath
+`breath.js` already computed a live RMS every 32ms and threw it away, reporting only the
+binary blow. It now also reports a smoothed 0-1 level through an optional `onLevel`
+(detection and calibration untouched, since the tests assert on those). The meadow takes
+it as a `breath` state: the seedhead leans downwind, trembles at two frequencies, and the
+puff stretches and rotates — all while she is still breathing, before anything releases.
+The wind rises with it, and one swept gust plays as the seeds actually leave.
+
+Tapping gets the same beat: a 620ms swell drives the identical `breath` state up to 1
+before releasing, so the fallback path is not visibly the poorer one.
+
 ## 8b. Replay lives on the meadow, not in a button
 The "Plant another wish" button is gone. Replay is now a pulsing spot sitting exactly on
 the seed that came to rest — `meadow.landing()` is the single source of truth for that

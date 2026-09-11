@@ -30,14 +30,16 @@ export const createSound = () => {
   let master = null;
   let windFilter = null;
   let windGain = null;
+  let noise = null;
   let muted = false;
   let growth = 0;
   let flight = 0;
+  let breath = 0;
 
   const apply = () => {
     if (!context) return;
     const now = context.currentTime;
-    const presence = clamp(growth * 0.7 + flight * 1.1);
+    const presence = clamp(growth * 0.7 + flight * 1.1 + breath * 0.45);
     windGain.gain.setTargetAtTime(muted ? 0 : 0.03 + presence * 0.17, now, 0.7);
     windFilter.frequency.setTargetAtTime(210 + presence * 940, now, 0.9);
   };
@@ -63,8 +65,9 @@ export const createSound = () => {
       windFilter.type = 'lowpass';
       windFilter.frequency.value = 210;
       windFilter.Q.value = 0.6;
+      noise = buildNoise(context);
       const wind = context.createBufferSource();
-      wind.buffer = buildNoise(context);
+      wind.buffer = noise;
       wind.loop = true;
       wind.connect(windFilter).connect(windGain).connect(master);
       wind.start();
@@ -78,6 +81,31 @@ export const createSound = () => {
     setFlight(value) {
       flight = clamp(value);
       apply();
+    },
+    setBreath(value) {
+      breath = clamp(value);
+      apply();
+    },
+    // One gust, swept open and closed again: the sound of the seeds actually leaving.
+    gust(intensity = 1) {
+      if (!context || muted) return;
+      const now = context.currentTime;
+      const source = context.createBufferSource();
+      source.buffer = noise;
+      source.loop = true;
+      const filter = context.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.Q.value = 1.1;
+      filter.frequency.setValueAtTime(280, now);
+      filter.frequency.exponentialRampToValueAtTime(2100, now + 0.6);
+      filter.frequency.exponentialRampToValueAtTime(360, now + 2.5);
+      const gain = context.createGain();
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.34 * clamp(intensity), now + 0.4);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.7);
+      source.connect(filter).connect(gain).connect(master);
+      source.start(now);
+      source.stop(now + 2.9);
     },
     setMuted(value) {
       muted = Boolean(value);

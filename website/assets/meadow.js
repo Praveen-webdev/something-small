@@ -26,7 +26,7 @@ export const createMeadow = (canvas) => {
   const seedSprite = document.createElement('canvas');
   const seedContext = seedSprite.getContext('2d');
   if (!backdrop || !puffContext || !blossomContext || !seedContext) return null;
-  const state = { growth: 0, flight: 0, motion: true };
+  const state = { growth: 0, flight: 0, motion: true, breath: 0 };
 
   const landingPoint = () => ({
     x: width * (width > height * 1.7 && height < 500 ? .5 : width < 600 ? .83 : .66),
@@ -390,7 +390,9 @@ export const createMeadow = (canvas) => {
     const stemGrowth = ease((growth - .035) / .28);
     const stemHeight = (landscape ? 350 : 238) * stemGrowth;
     const sway = state.motion ? Math.sin(time * .0008) * 3 + Math.sin(time * .0013) : 0;
-    const headX = sway + stemGrowth * 7;
+    const breath = state.breath;
+    const tremble = breath && state.motion ? (Math.sin(time * .022) * 2.4 + Math.sin(time * .039) * 1.2) * breath : 0;
+    const headX = sway + stemGrowth * 7 + breath * 10 + tremble;
     const headY = -stemHeight;
     context.save();
     context.translate(baseX, baseY);
@@ -448,7 +450,8 @@ export const createMeadow = (canvas) => {
           if (flight < .55) {
             context.save();
             context.globalAlpha *= 1 - ease(flight / .55);
-            context.scale(.38 + opening * .62, .22 + opening * .78);
+            context.rotate(breath * .1 + tremble * .006);
+            context.scale((.38 + opening * .62) * (1 + breath * .07), (.22 + opening * .78) * (1 - breath * .05));
             context.drawImage(puff, -80, -80 - (1 - opening) * 25, 160, 160);
             context.restore();
           }
@@ -558,6 +561,7 @@ export const createMeadow = (canvas) => {
     setState: (next) => {
       if (typeof next.growth === 'number') state.growth = clamp(next.growth);
       if (typeof next.flight === 'number') state.flight = clamp(next.flight);
+      if (typeof next.breath === 'number') state.breath = clamp(next.breath);
       if (typeof next.motion === 'boolean') state.motion = next.motion;
       requestRender();
     },
