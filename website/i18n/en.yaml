@@ -133,7 +133,7 @@ thresholdTitle:
 thresholdNote:
   other: "Find somewhere alone you can be still for a minute or two."
 optionNoisy:
-  other: "There’s noise around me"
+  other: "No noise around me"
 optionPrivate:
   other: "No one’s nearby"
 begin:

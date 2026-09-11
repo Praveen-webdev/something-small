@@ -20,16 +20,15 @@ somewhere quiet — which primes the threshold. No dandelion imagery.
 A still, near-empty first frame: "Before we begin." / "Find somewhere alone you can be
 still for a minute or two." Two square checkboxes (round marks read as radio buttons),
 each filling forest-green with a check when ticked.
-- `There's noise around me` — off by default. On: lead with tap rather than the
-  microphone, and start muted.
-- `No one's nearby` — **on by default.** Off: at chapter 4 the typed wish is replaced
-  with "keep this one in your heart", and nothing rides the flight.
+- `No noise around me` — off by default. Off means there is noise: lead with tap rather
+  than the microphone, and start muted.
+- `No one's nearby` — off by default. Off means someone may be: at chapter 4 the typed
+  wish is replaced with "keep this one in your heart", and nothing rides the flight.
 
-The second tick is pre-ticked deliberately. Phrased affirmatively, an unticked box would
-mean "someone may be nearby", so skipping the threshold would silently drop the typed
-wish — punishing exactly the person who skips. Pre-ticking keeps the default the full
-experience while still letting the tick do real work. It is a preference, not consent,
-so a default tick is not a dark pattern here.
+Both are phrased affirmatively and both start unticked, so the default is the discreet
+experience on every axis. Accepted knowingly. The cost is that the typed wish riding the
+flight does not fire unless she ticks the second box; the mic button and the header mute
+control both remain reachable regardless, so nothing is unreachable, only unlit.
 
 Rules: **`begin` is always available from the first moment.** Both boxes are reset by JS
 on every load, since browsers restore form state across a soft reload and the site must

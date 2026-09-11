@@ -341,7 +341,7 @@ const setMuted = (value) => {
 const begin = () => {
   if (entered) return;
   entered = true;
-  noisy = elements.optionNoisy.checked;
+  noisy = !elements.optionNoisy.checked;
   secret = !elements.optionPrivate.checked;
   if (noisy) {
     elements.microphoneButton.classList.replace('primary-button', 'text-button');
@@ -407,6 +407,6 @@ if (!meadow) {
 }
 // Browsers restore form state across a soft reload; every visit must start fresh.
 elements.optionNoisy.checked = false;
-elements.optionPrivate.checked = true;
+elements.optionPrivate.checked = false;
 elements.beginButton.focus({ preventScroll: true });
 measure();

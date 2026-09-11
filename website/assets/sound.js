@@ -38,7 +38,7 @@ export const createSound = () => {
     if (!context) return;
     const now = context.currentTime;
     const presence = clamp(growth * 0.7 + flight * 1.1);
-    windGain.gain.setTargetAtTime(muted ? 0 : 0.014 + presence * 0.082, now, 0.7);
+    windGain.gain.setTargetAtTime(muted ? 0 : 0.03 + presence * 0.17, now, 0.7);
     windFilter.frequency.setTargetAtTime(210 + presence * 940, now, 0.9);
   };
 
@@ -93,7 +93,7 @@ export const createSound = () => {
         oscillator.frequency.value = frequency;
         const start = now + index * 0.09;
         gain.gain.setValueAtTime(0.0001, start);
-        gain.gain.linearRampToValueAtTime(0.085 / (index + 1), start + 0.02);
+        gain.gain.linearRampToValueAtTime(0.16 / (index + 1), start + 0.02);
         gain.gain.exponentialRampToValueAtTime(0.0001, start + 3.4);
         oscillator.connect(gain).connect(master);
         oscillator.start(start);
