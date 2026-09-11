@@ -10,7 +10,7 @@ Nothing may hint at "dandelion" or "wish" before the end.
   The favicon currently reuses `partials/seed.html` — needs its own neutral mark.
 - The canvas keeps its natural bloom-at-chapter-2 arc. That is the story unfolding,
   not a leak; `drawFlower`/`drawBud` are untouched.
-- Tab title is "A small thing".
+- Tab title is "Have a minute"; the share card stays "something small, for you".
 - The scroll cue said "SCROLL TO GROW" — now "SCROLL GENTLY".
 - The chapter dots carried `aria-label`/`title` of "The meadow", "A golden bloom",
   "Make your wish" and the nav was labelled "The life of a little wish". Those are
