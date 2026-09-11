@@ -26,7 +26,7 @@ export const createMeadow = (canvas) => {
   const seedSprite = document.createElement('canvas');
   const seedContext = seedSprite.getContext('2d');
   if (!backdrop || !puffContext || !blossomContext || !seedContext) return null;
-  const state = { growth: 0, flight: 0, motion: true, breath: 0 };
+  const state = { growth: 0, flight: 0, motion: true, breath: 0, headroom: 0 };
 
   const landingPoint = () => ({
     x: width * (width > height * 1.7 && height < 500 ? .5 : width < 600 ? .83 : .66),
@@ -388,7 +388,13 @@ export const createMeadow = (canvas) => {
     const baseX = width * (landscape ? .72 : .5);
     const baseY = height * .88;
     const stemGrowth = ease((growth - .035) / .28);
-    const stemHeight = (landscape ? 350 : 238) * stemGrowth;
+    // The stem grows only as tall as the copy above it allows. `headroom` is the screen
+    // Y the text reaches down to; the seedhead is 80 local units across at full opening,
+    // so the stem is capped to keep the puff clear of it whatever the text does.
+    let stemHeight = (landscape ? 350 : 238) * stemGrowth;
+    if (state.headroom > 0) {
+      stemHeight = Math.min(stemHeight, Math.max(40, (baseY - state.headroom) / scale - 80));
+    }
     const sway = state.motion ? Math.sin(time * .0008) * 3 + Math.sin(time * .0013) : 0;
     const breath = state.breath;
     const tremble = breath && state.motion ? (Math.sin(time * .022) * 2.4 + Math.sin(time * .039) * 1.2) * breath : 0;
@@ -562,6 +568,7 @@ export const createMeadow = (canvas) => {
       if (typeof next.growth === 'number') state.growth = clamp(next.growth);
       if (typeof next.flight === 'number') state.flight = clamp(next.flight);
       if (typeof next.breath === 'number') state.breath = clamp(next.breath);
+      if (typeof next.headroom === 'number') state.headroom = Math.max(0, next.headroom);
       if (typeof next.motion === 'boolean') state.motion = next.motion;
       requestRender();
     },

@@ -113,6 +113,21 @@ Known cost: an unlabelled pulse is far less discoverable than a button. "Every e
 holds a little beginning." now sits under it and points at the sprout, but if she never
 spots it, the piece simply ends — which is a defensible ending, just not a chosen one.
 
+## 8c. The ending note rings the pulse
+"Every ending holds a little beginning." is no longer a line under a button; it is set on
+a circular path around the replay pulse as an SVG `textPath`, centred at the top of the
+ring. `.end-controls` is gone entirely, since that note was all it held. The ripple was
+tightened from 2.6x to keep clear of the ring, and `textLength` pins the arc so the text
+cannot grow into the dot on a different font metric.
+
+## 8d. The flower yields to the copy
+The stem is capped so the seedhead can never reach the text above it. `main.js` measures
+`.story-copy` and hands the meadow a `headroom` value; `drawFlower` limits `stemHeight`
+so the puff — 80 local units across at full opening — always clears it. A ResizeObserver
+on the copy keeps this true as text wraps differently, as the wish field appears, and as
+the viewport changes. In normal portrait the cap does not bind at all; it only takes
+effect where the flower would otherwise collide.
+
 ## 9. Birthday beat — only at the end
 Everything before the flight stays universal. Sequenced under the signature, plain and
 tender: "Happy birthday, <name>." in serif italic, nothing more. The existing

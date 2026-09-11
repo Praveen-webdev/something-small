@@ -7,7 +7,7 @@ const elements = Object.fromEntries([
   'description', 'wish-field', 'wish-input', 'grow-controls', 'gentle-note',
   'scroll-prompt', 'scroll-label', 'wish-controls', 'microphone-button',
   'tap-button', 'microphone-note', 'blow-controls', 'blow-button', 'blow-note', 'countdown',
-  'cancel-button', 'end-controls', 'replay-spot', 'wish-echo', 'finale',
+  'cancel-button', 'replay-spot', 'wish-echo', 'finale',
   'birthday-line', 'brand', 'threshold', 'begin-button', 'option-noisy', 'option-private',
   'sound-toggle', 'confirm', 'confirm-list', 'confirm-continue', 'confirm-back', 'veil',
 ].map((id) => [id.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()), document.getElementById(id)]));
@@ -106,7 +106,6 @@ const setControls = () => {
   elements.blowControls.hidden = phase !== 'listening';
   elements.countdown.hidden = phase !== 'countdown';
   elements.cancelButton.hidden = !['permission', 'countdown', 'listening'].includes(phase);
-  elements.endControls.hidden = phase !== 'end';
   if (phase !== 'end') {
     clearTimeout(spotTimer);
     elements.replaySpot.hidden = true;
@@ -139,12 +138,23 @@ const goToChapter = (index, immediate = false) => {
   window.scrollTo({ top: chapterPositions[index] * scrollRange, behavior: immediate || reducedMotion.matches ? 'instant' : 'smooth' });
 };
 
+// Measured rather than guessed: text wraps differently per device, the on-screen
+// keyboard shrinks the viewport, and the wish field appears late. A ResizeObserver on
+// the copy keeps the flower out of its way in every one of those cases.
+const updateHeadroom = () => {
+  if (!meadow) return;
+  const copy = elements.storyCopy.getBoundingClientRect();
+  const view = elements.viewport.getBoundingClientRect();
+  meadow.setState({ headroom: Math.max(0, copy.bottom - view.top + 14) });
+};
+
 const measure = () => {
   const previousRange = scrollRange;
   scrollRange = Math.max(1, elements.journey.offsetHeight - elements.viewport.offsetHeight);
   if (previousRange > 1 && previousRange !== scrollRange && phase === 'growing') {
     window.scrollTo({ top: progress * scrollRange, behavior: 'instant' });
   }
+  updateHeadroom();
   updateGrowth();
 };
 
@@ -536,6 +546,7 @@ document.addEventListener('visibilitychange', () => {
 });
 reducedMotion.addEventListener('change', () => meadow?.setState({ motion: !reducedMotion.matches }));
 meadow?.setState({ motion: !reducedMotion.matches });
+if (meadow && 'ResizeObserver' in window) new ResizeObserver(updateHeadroom).observe(elements.storyCopy);
 if (!meadow) {
   elements.gentleNote.textContent = messages.canvasFallback;
   console.warn('Canvas 2D is not available in this browser.');
