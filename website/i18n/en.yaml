@@ -1,0 +1,140 @@
+brand:
+  other: "a little wish"
+quietMoment:
+  other: "A MOMENT OF QUIET"
+skipToWish:
+  other: "Make a wish"
+introEyebrow:
+  other: "SOMEWHERE, AWAY FROM THE HURRY"
+introTitle:
+  other: "Big wishes."
+introAccent:
+  other: "Little beginnings."
+introDescription:
+  other: "A little earth, a little sunshine, and something to believe in."
+introNote:
+  other: "Take your time. There’s no rush here."
+sproutEyebrow:
+  other: "01 / A LITTLE BEGINNING"
+sproutTitle:
+  other: "Good things grow"
+sproutAccent:
+  other: "in their own time."
+sproutDescription:
+  other: "Beneath the quiet, something wonderful is waking up."
+bloomEyebrow:
+  other: "02 / A LITTLE SUNSHINE"
+bloomTitle:
+  other: "A little courage."
+bloomAccent:
+  other: "A little sunshine."
+bloomDescription:
+  other: "And just like that, the world becomes a little brighter."
+changeEyebrow:
+  other: "03 / A LITTLE PATIENCE"
+changeTitle:
+  other: "Not every ending"
+changeAccent:
+  other: "is an ending."
+changeDescription:
+  other: "Some things are simply becoming what they were meant to be."
+wishEyebrow:
+  other: "04 / A LITTLE MAGIC"
+wishTitle:
+  other: "What does your"
+wishAccent:
+  other: "heart wish for?"
+wishDescription:
+  other: "Something little. Something wild. Hold it in your heart."
+wishLabel:
+  other: "Write your wish, or keep it in your heart"
+wishPlaceholder:
+  other: "I wish for…"
+wishPrivacy:
+  other: "Just between you and the wind. Never saved or sent."
+useMicrophone:
+  other: "Blow with my breath"
+useTap:
+  other: "or send it with a gentle tap"
+microphonePrivacy:
+  other: "Microphone is optional. Audio stays on your device."
+requestingMicrophone:
+  other: "Allow your microphone, or use a gentle tap."
+countdownEyebrow:
+  other: "A WISH, A BREATH, A BEGINNING"
+countdownTitle:
+  other: "Hold your wish."
+countdownAccent:
+  other: "Take a little breath."
+countdownDescription:
+  other: "The wind is almost ready."
+listeningEyebrow:
+  other: "YOUR MOMENT IS HERE"
+listeningTitle:
+  other: "Let a little hope"
+listeningAccent:
+  other: "take flight."
+listeningDescription:
+  other: "Gently blow toward your microphone, or tap below."
+tapDescription:
+  other: "Take a breath, make your wish, and tap to send it into the wind."
+blowButton:
+  other: "Blow the seeds"
+listeningNote:
+  other: "Listening for your breath…"
+listeningTimeout:
+  other: "The wind is a little shy. A gentle tap works too."
+microphoneDenied:
+  other: "No microphone? No worries. Your wish can fly with a tap."
+microphoneUnavailable:
+  other: "Your microphone isn’t available here. A gentle tap works just as well."
+microphoneInterrupted:
+  other: "The microphone has stopped. You can still send your wish with a tap."
+flightEyebrow:
+  other: "SOME THINGS ARE MEANT TO BE LET GO"
+flightTitle:
+  other: "Off to wherever"
+flightAccent:
+  other: "wishes go."
+flightDescription:
+  other: "A little hope, carried on the wind."
+endEyebrow:
+  other: "AND SO, SOMETHING NEW BEGINS"
+endTitle:
+  other: "May your wishes"
+endAccent:
+  other: "come true."
+endDescription:
+  other: "And may a little of that magic find its way back to you."
+replay:
+  other: "Plant another wish"
+endNote:
+  other: "Every ending holds a little beginning."
+scrollHint:
+  other: "SCROLL TO GROW"
+keepGrowing:
+  other: "KEEP SCROLLING"
+continueJourney:
+  other: "Continue the journey"
+chapterNavigation:
+  other: "The life of a little wish"
+chapterIntro:
+  other: "The meadow"
+chapterSprout:
+  other: "A new beginning"
+chapterBloom:
+  other: "A golden bloom"
+chapterChange:
+  other: "A quiet change"
+chapterWish:
+  other: "Make your wish"
+footer:
+  other: "A SMALL REMINDER THAT WONDER IS STILL EVERYWHERE."
+meadowLabel:
+  other: "THE WISHING MEADOW"
+cancel:
+  other: "Back to my wish"
+noScript:
+  other: "Turn on JavaScript to watch the meadow grow and send your wish into the wind."
+canvasFallback:
+  other: "Your browser cannot paint this meadow, but your wish is still welcome."

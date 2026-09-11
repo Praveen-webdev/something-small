@@ -1,0 +1,8 @@
+title: A Little Wish
+languageCode: en
+defaultContentLanguage: en
+enableRobotsTXT: true
+disableKinds:
+  - taxonomy
+  - term
+  - RSS

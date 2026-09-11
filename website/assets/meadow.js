@@ -1,0 +1,566 @@
+const clamp = (value) => Math.max(0, Math.min(1, value));
+const ease = (value) => { const amount = clamp(value); return amount * amount * (3 - 2 * amount); };
+const randomGenerator = (seed) => () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+const circle = (context, x, y, radius, color) => {
+  context.fillStyle = color;
+  context.beginPath();
+  context.arc(x, y, Math.max(0.01, radius), 0, Math.PI * 2);
+  context.fill();
+};
+const ellipse = (context, x, y, radiusX, radiusY, color, rotation = 0) => {
+  context.fillStyle = color;
+  context.beginPath();
+  context.ellipse(x, y, Math.max(0.01, radiusX), Math.max(0.01, radiusY), rotation, 0, Math.PI * 2);
+  context.fill();
+};
+
+export const createMeadow = (canvas) => {
+  const context = canvas.getContext('2d', { alpha: false });
+  if (!context) return null;
+  const background = document.createElement('canvas');
+  const backdrop = background.getContext('2d', { alpha: false });
+  const puff = document.createElement('canvas');
+  const puffContext = puff.getContext('2d');
+  const blossom = document.createElement('canvas');
+  const blossomContext = blossom.getContext('2d');
+  const seedSprite = document.createElement('canvas');
+  const seedContext = seedSprite.getContext('2d');
+  if (!backdrop || !puffContext || !blossomContext || !seedContext) return null;
+  const state = { growth: 0, flight: 0, motion: true };
+  let width = 1;
+  let height = 1;
+  let pixelRatio = 1;
+  let frame = 0;
+  let lastRender = 0;
+  let time = 0;
+  let dirty = true;
+  let destroyed = false;
+
+  const paintCloud = (x, y, size, seed) => {
+    const random = randomGenerator(seed);
+    backdrop.save();
+    backdrop.translate(x, y);
+    backdrop.scale(size, size);
+    for (let layer = 0; layer < 4; layer += 1) {
+      for (let index = 0; index < 65; index += 1) {
+        const cloudX = (random() - .5) * 240;
+        const top = Math.sin((cloudX / 240 + .5) * Math.PI);
+        const cloudY = (random() - .68) * 55 * top + layer * 3;
+        ellipse(backdrop, cloudX, cloudY, 15 + random() * 34, 5 + random() * 14, layer === 0 ? '#8faea314' : '#fffcef18');
+      }
+    }
+    for (let index = 0; index < 28; index += 1) {
+      const cloudX = (random() - .5) * 190;
+      ellipse(backdrop, cloudX, -10 - Math.sin((cloudX / 190 + .5) * Math.PI) * 23, 14 + random() * 25, 6 + random() * 9, '#fffff31b');
+    }
+    backdrop.restore();
+  };
+
+  const paintBackground = () => {
+    const random = randomGenerator(8732);
+    backdrop.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    const sky = backdrop.createLinearGradient(0, 0, width * .18, height);
+    sky.addColorStop(0, '#bbd7d6');
+    sky.addColorStop(.38, '#e0e8d5');
+    sky.addColorStop(.65, '#f2ebce');
+    sky.addColorStop(1, '#d9dca8');
+    backdrop.fillStyle = sky;
+    backdrop.fillRect(0, 0, width, height);
+    const sunshine = backdrop.createRadialGradient(width * .7, height * .27, 0, width * .7, height * .27, width * .7);
+    sunshine.addColorStop(0, '#fff6ce44');
+    sunshine.addColorStop(1, '#fff6ce00');
+    backdrop.fillStyle = sunshine;
+    backdrop.fillRect(0, 0, width, height);
+    const cloudScale = Math.max(.7, width / 1200);
+    paintCloud(width * .07, height * .22, cloudScale * 1.55, 51);
+    paintCloud(width * .91, height * .34, cloudScale * 1.45, 913);
+    paintCloud(width * .75, height * .12, cloudScale * .8, 325);
+    paintCloud(width * .28, height * .48, cloudScale * .65, 789);
+    paintCloud(width * .97, height * .53, cloudScale * .75, 69);
+
+    backdrop.fillStyle = '#adc4b36b';
+    backdrop.beginPath();
+    backdrop.moveTo(0, height * .66);
+    backdrop.bezierCurveTo(width * .04, height * .6, width * .08, height * .64, width * .13, height * .59);
+    backdrop.bezierCurveTo(width * .21, height * .51, width * .25, height * .62, width * .32, height * .6);
+    backdrop.bezierCurveTo(width * .43, height * .62, width * .54, height * .68, width * .62, height * .64);
+    backdrop.bezierCurveTo(width * .72, height * .61, width * .79, height * .54, width * .87, height * .58);
+    backdrop.bezierCurveTo(width * .95, height * .62, width * .96, height * .56, width, height * .59);
+    backdrop.lineTo(width, height);
+    backdrop.lineTo(0, height);
+    backdrop.fill();
+
+    backdrop.fillStyle = '#9bb58c';
+    backdrop.beginPath();
+    backdrop.moveTo(0, height * .65);
+    backdrop.bezierCurveTo(width * .2, height * .59, width * .38, height * .75, width * .6, height * .67);
+    backdrop.bezierCurveTo(width * .77, height * .61, width * .89, height * .64, width, height * .65);
+    backdrop.lineTo(width, height);
+    backdrop.lineTo(0, height);
+    backdrop.fill();
+
+    for (let index = 0; index < 190; index += 1) {
+      const x = random() * width;
+      const y = height * (.665 + .012 * Math.sin(x / width * 13));
+      const radius = (1.5 + random() * 4.5) * height / 800;
+      ellipse(backdrop, x, y, radius * 1.4, radius, ['#76997460', '#8aab7c66', '#adc38c88'][index % 3]);
+    }
+
+    const grass = backdrop.createLinearGradient(0, height * .65, width * .12, height);
+    grass.addColorStop(0, '#b5c68a');
+    grass.addColorStop(.26, '#a5b979');
+    grass.addColorStop(.65, '#88a461');
+    grass.addColorStop(1, '#718c50');
+    backdrop.fillStyle = grass;
+    backdrop.beginPath();
+    backdrop.moveTo(0, height * .74);
+    backdrop.bezierCurveTo(width * .24, height * .71, width * .34, height * .66, width * .55, height * .685);
+    backdrop.bezierCurveTo(width * .78, height * .69, width * .85, height * .74, width, height * .705);
+    backdrop.lineTo(width, height);
+    backdrop.lineTo(0, height);
+    backdrop.closePath();
+    backdrop.save();
+    backdrop.clip();
+    backdrop.fillRect(0, height * .64, width, height * .36);
+    const light = backdrop.createRadialGradient(width * .53, height * .75, 0, width * .53, height * .75, width * .6);
+    light.addColorStop(0, '#ebdfa844');
+    light.addColorStop(1, '#ebdfa800');
+    backdrop.fillStyle = light;
+    backdrop.fillRect(0, height * .64, width, height * .36);
+
+    for (let index = 0; index < 7400; index += 1) {
+      const x = random() * width;
+      const y = height * (.65 + random() * .37);
+      const depth = clamp((y / height - .66) / .34);
+      const brushWidth = (1 + random() * 8) * (.4 + depth) * Math.max(.7, width / 1400);
+      ellipse(backdrop, x, y, brushWidth, .4 + depth * random() * 1.8, ['#e2dda52b', '#d3d49025', '#45693619', '#65824120', '#f0e4af23'][index % 5], -.2 + random() * .4);
+    }
+
+    for (let index = 0; index < Math.min(2300, width * 1.65); index += 1) {
+      const x = random() * width;
+      const y = height * (.69 + random() * .33);
+      const depth = clamp((y / height - .66) / .34);
+      const grassHeight = (2 + random() * 23) * depth * height / 800;
+      backdrop.strokeStyle = ['#506f3f37', '#64814660', '#d0ce875b', '#e3d99b52', '#728c493d'][index % 5];
+      backdrop.lineWidth = .4 + depth * random();
+      backdrop.beginPath();
+      backdrop.moveTo(x, y);
+      backdrop.quadraticCurveTo(x + grassHeight * .2, y - grassHeight * .7, x + (random() - .5) * grassHeight, y - grassHeight);
+      backdrop.stroke();
+    }
+
+    for (let index = 0; index < 130; index += 1) {
+      const x = random() * width;
+      const y = height * (.74 + random() * .23);
+      const depth = (y / height - .65) * 2.4;
+      if (Math.abs(x - width * .5) < width * .18 && y > height * .8) continue;
+      backdrop.strokeStyle = '#6b854b77';
+      backdrop.lineWidth = .8;
+      backdrop.beginPath();
+      backdrop.moveTo(x, y + 5 * depth);
+      backdrop.lineTo(x + 1, y - 2 * depth);
+      backdrop.stroke();
+      const flowerColor = index % 3 === 0 ? '#eee8be' : index % 3 === 1 ? '#ead386' : '#bdc4a0';
+      ellipse(backdrop, x, y - 3 * depth, 1.8 * depth, 1 * depth, flowerColor);
+    }
+    backdrop.restore();
+
+    for (let index = 0; index < 75; index += 1) {
+      const side = index % 2 ? 1 : -1;
+      const x = side === -1 ? random() * width * .25 : width * (.77 + random() * .23);
+      const y = height * (.98 + random() * .04);
+      const length = (16 + random() * 50) * height / 800;
+      backdrop.strokeStyle = ['#4e713d75', '#597b416b', '#a5b96a85'][index % 3];
+      backdrop.lineWidth = 1 + random() * 1.6;
+      backdrop.beginPath();
+      backdrop.moveTo(x, y);
+      backdrop.quadraticCurveTo(x - side * length * .25, y - length * .65, x + side * length * .16, y - length);
+      backdrop.stroke();
+    }
+
+    for (let index = 0; index < 6500; index += 1) {
+      backdrop.fillStyle = index % 2 ? '#ffffff07' : '#50634806';
+      backdrop.fillRect(random() * width, random() * height, .6 + random() * 1.5, .5 + random());
+    }
+  };
+
+  const paintFlowers = () => {
+    const random = randomGenerator(904);
+    puff.width = puff.height = 320;
+    puffContext.translate(160, 160);
+    puffContext.scale(2, 2);
+    const glow = puffContext.createRadialGradient(0, 0, 3, 0, 0, 68);
+    glow.addColorStop(0, '#a9a78019');
+    glow.addColorStop(.58, '#f6f3dc68');
+    glow.addColorStop(.88, '#fffef040');
+    glow.addColorStop(1, '#fffef000');
+    circle(puffContext, 0, 0, 69, glow);
+    for (let index = 0; index < 270; index += 1) {
+      const angle = index * 2.399963;
+      const radius = Math.sqrt((index + .5) / 270) * 61;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      const inner = .15 + random() * .16;
+      puffContext.strokeStyle = index % 4 ? '#f9f9eaaa' : '#8c98746b';
+      puffContext.lineWidth = .35 + random() * .3;
+      puffContext.beginPath();
+      puffContext.moveTo(x * inner, y * inner);
+      puffContext.quadraticCurveTo(x * .6 - y * .05, y * .6 + x * .05, x, y);
+      puffContext.stroke();
+      const feather = 3 + random() * 7;
+      for (let strand = 0; strand < 9; strand += 1) {
+        const featherAngle = angle + (strand - 4) * .3;
+        puffContext.strokeStyle = index % 3 ? '#fffff2d9' : '#ffffef91';
+        puffContext.lineWidth = .28 + random() * .25;
+        puffContext.beginPath();
+        puffContext.moveTo(x, y);
+        puffContext.quadraticCurveTo(x + Math.cos(featherAngle) * feather * .7, y + Math.sin(featherAngle) * feather * .7, x + Math.cos(featherAngle) * feather, y + Math.sin(featherAngle) * feather);
+        puffContext.stroke();
+      }
+      if (index % 4 === 0) ellipse(puffContext, x * .23, y * .23, .45, 1.15, '#807c5260', angle);
+    }
+    circle(puffContext, -5, -8, 8, '#fffdf130');
+
+    blossom.width = blossom.height = 320;
+    blossomContext.translate(160, 160);
+    blossomContext.scale(2, 2);
+    for (let layer = 0; layer < 4; layer += 1) {
+      const count = 65 - layer * 9;
+      for (let index = 0; index < count; index += 1) {
+        const angle = index / count * Math.PI * 2 + random() * .1;
+        const length = 59 - layer * 11 + random() * 9;
+        const petalWidth = 1 + random() * 2;
+        blossomContext.save();
+        blossomContext.rotate(angle);
+        blossomContext.fillStyle = ['#d8a927', '#e9ba31', '#f4cc40', '#f8da55'][layer];
+        blossomContext.beginPath();
+        blossomContext.moveTo(-petalWidth * .5, 5);
+        blossomContext.bezierCurveTo(-petalWidth * 1.2, -length * .4, -petalWidth, -length * .85, 1, -length);
+        blossomContext.lineTo(1.6, -length + 2.5);
+        blossomContext.lineTo(2.5, -length + .6);
+        blossomContext.bezierCurveTo(petalWidth * 1.4, -length * .7, petalWidth, -length * .3, petalWidth * .5, 5);
+        blossomContext.fill();
+        blossomContext.strokeStyle = '#fff1a553';
+        blossomContext.lineWidth = .55;
+        blossomContext.beginPath();
+        blossomContext.moveTo(0, -8);
+        blossomContext.quadraticCurveTo(2, -length * .6, 1, -length + 4);
+        blossomContext.stroke();
+        blossomContext.restore();
+      }
+    }
+    for (let index = 0; index < 60; index += 1) {
+      const angle = random() * Math.PI * 2;
+      const radius = random() * 13;
+      circle(blossomContext, Math.cos(angle) * radius, Math.sin(angle) * radius, .8 + random(), index % 3 ? '#eabe35' : '#ffdf69');
+    }
+
+    seedSprite.width = 120;
+    seedSprite.height = 140;
+    seedContext.translate(60, 22);
+    seedContext.scale(2, 2);
+    seedContext.lineWidth = .65;
+    seedContext.strokeStyle = '#fdfbeac9';
+    for (let index = 0; index < 23; index += 1) {
+      const angle = Math.PI + index / 22 * Math.PI;
+      const reach = 13 + Math.sin(index * 3.4) * 2;
+      seedContext.beginPath();
+      seedContext.moveTo(0, 16);
+      seedContext.quadraticCurveTo(Math.cos(angle) * reach * .55, 6 + Math.sin(angle) * reach * .6, Math.cos(angle) * reach, 5 + Math.sin(angle) * reach * .65);
+      seedContext.stroke();
+    }
+    seedContext.strokeStyle = '#68724cc2';
+    seedContext.lineWidth = .65;
+    seedContext.beginPath();
+    seedContext.moveTo(0, 16);
+    seedContext.quadraticCurveTo(-1, 25, -3, 35);
+    seedContext.stroke();
+    ellipse(seedContext, -3, 35, 1.15, 3.2, '#867449', .24);
+  };
+
+  const drawLeaf = (x, y, length, angle, opacity = 1) => {
+    context.save();
+    context.translate(x, y);
+    context.rotate(angle);
+    context.globalAlpha *= opacity;
+    const leafColor = context.createLinearGradient(0, 0, 0, -length);
+    leafColor.addColorStop(0, '#4b703a');
+    leafColor.addColorStop(.6, '#7e9b49');
+    leafColor.addColorStop(1, '#a2b468');
+    context.fillStyle = leafColor;
+    context.beginPath();
+    context.moveTo(0, 0);
+    for (let index = 1; index < 7; index += 1) {
+      const position = index / 7;
+      const leafWidth = Math.sin(position * Math.PI) * length * .17;
+      context.lineTo(-leafWidth, -length * position + length * .07);
+      context.lineTo(-leafWidth * .36, -length * position - length * .015);
+    }
+    context.lineTo(0, -length);
+    for (let index = 6; index > 0; index -= 1) {
+      const position = index / 7;
+      const leafWidth = Math.sin(position * Math.PI) * length * .17;
+      context.lineTo(leafWidth * .4, -length * position - length * .015);
+      context.lineTo(leafWidth, -length * position + length * .06);
+    }
+    context.closePath();
+    context.fill();
+    context.strokeStyle = '#ccd39070';
+    context.lineWidth = .8;
+    context.beginPath();
+    context.moveTo(0, 0);
+    context.lineTo(0, -length * .93);
+    context.stroke();
+    context.restore();
+  };
+
+  const drawBud = (amount, white = false) => {
+    context.save();
+    const opening = clamp(amount);
+    const budHeight = 27 + opening * 6;
+    const budWidth = 10 + opening * 9;
+    const budGradient = context.createLinearGradient(-budWidth, 0, budWidth, 0);
+    budGradient.addColorStop(0, '#4d703a');
+    budGradient.addColorStop(.45, '#8ca34d');
+    budGradient.addColorStop(.7, '#a9b95b');
+    budGradient.addColorStop(1, '#557b3e');
+    context.fillStyle = budGradient;
+    context.beginPath();
+    context.moveTo(-6, 10);
+    context.bezierCurveTo(-budWidth - 3, 0, -budWidth, -budHeight * .7, -budWidth * .65, -budHeight);
+    context.quadraticCurveTo(0, -budHeight - 5, budWidth * .65, -budHeight);
+    context.bezierCurveTo(budWidth, -budHeight * .7, budWidth + 3, 0, 6, 10);
+    context.fill();
+    for (let index = -4; index <= 4; index += 1) {
+      const x = index / 4 * budWidth * .7;
+      context.strokeStyle = index % 2 ? '#d0cc6966' : '#3d623b6b';
+      context.lineWidth = .8;
+      context.beginPath();
+      context.moveTo(x * .5, 5);
+      context.quadraticCurveTo(x * 1.25, -budHeight * .6, x, -budHeight);
+      context.stroke();
+    }
+    if (opening > .03) {
+      for (let index = 0; index < 23; index += 1) {
+        const x = Math.sin(index * 2.399) * budWidth * .65;
+        context.strokeStyle = white ? ['#fffce5', '#e0e5cf', '#f7f6e1'][index % 3] : ['#e7b629', '#f6d54c', '#d7a12c'][index % 3];
+        context.lineWidth = white ? .9 : 1.45;
+        context.beginPath();
+        context.moveTo(x, -budHeight + 3);
+        context.quadraticCurveTo(x * .85, -budHeight - opening * 9, x * .9 + Math.sin(index) * 2, -budHeight - opening * (8 + Math.cos(index * 7) * 4));
+        context.stroke();
+      }
+    }
+    context.restore();
+  };
+
+  const drawSepals = (spread) => {
+    for (let index = 0; index < 7; index += 1) {
+      const side = (index - 3) / 3;
+      context.fillStyle = index % 2 ? '#6e9046' : '#8fa757';
+      context.beginPath();
+      context.moveTo(side * 7, 6);
+      context.quadraticCurveTo(side * (20 + spread * 15), 5 + spread * 11, side * (23 + spread * 12), 19 + Math.abs(side) * 9);
+      context.quadraticCurveTo(side * 14, 15, side * 4, 12);
+      context.fill();
+    }
+  };
+
+  const drawSeed = (x, y, size, angle, opacity = 1) => {
+    context.save();
+    context.globalAlpha *= opacity;
+    context.translate(x, y);
+    context.rotate(angle);
+    context.drawImage(seedSprite, -30 * size, -11 * size, 60 * size, 70 * size);
+    context.restore();
+  };
+
+  const drawFlower = () => {
+    const growth = state.growth;
+    const flight = state.flight;
+    const scale = height / 800 * (width < 600 ? .92 : 1);
+    const landscape = width > height * 1.7 && height < 500;
+    const baseX = width * (landscape ? .72 : .5);
+    const baseY = height * .88;
+    const stemGrowth = ease((growth - .035) / .28);
+    const stemHeight = (landscape ? 350 : 238) * stemGrowth;
+    const sway = state.motion ? Math.sin(time * .0008) * 3 + Math.sin(time * .0013) : 0;
+    const headX = sway + stemGrowth * 7;
+    const headY = -stemHeight;
+    context.save();
+    context.translate(baseX, baseY);
+    context.scale(scale, scale);
+    context.globalAlpha = 1 - ease((flight - .8) / .2);
+    if (growth > .01) {
+      const leaves = ease((growth - .01) / .21);
+      ellipse(context, 0, 2, 60 * leaves, 6 * leaves, '#3e622721');
+      drawLeaf(-3, 2, 83 * leaves, -1.07 + sway * .002);
+      drawLeaf(3, 3, 78 * leaves, 1.04 + sway * .002);
+      drawLeaf(-1, 4, 62 * leaves, -.53);
+      drawLeaf(2, 4, 56 * leaves, .67);
+      if (stemHeight > 1) {
+        context.lineCap = 'round';
+        context.strokeStyle = '#4f713b';
+        context.lineWidth = 6.5;
+        context.beginPath();
+        context.moveTo(0, 0);
+        context.bezierCurveTo(-9, -stemHeight * .35, 15 + sway, -stemHeight * .66, headX, headY + 6);
+        context.stroke();
+        context.strokeStyle = '#b1bd7794';
+        context.lineWidth = 2;
+        context.beginPath();
+        context.moveTo(-1.5, 0);
+        context.bezierCurveTo(-10.5, -stemHeight * .35, 13.5 + sway, -stemHeight * .66, headX - 1.5, headY + 6);
+        context.stroke();
+        context.save();
+        context.translate(headX, headY);
+        const maturity = ease((growth - .13) / .14);
+        context.scale(maturity, maturity);
+        drawSepals(growth > .76 ? 1 : .3);
+        if (growth < .37) drawBud(ease((growth - .23) / .14));
+        else if (growth < .6) {
+          const opening = ease((growth - .37) / .1);
+          const closing = ease((growth - .55) / .06);
+          if (opening < .9) drawBud(1);
+          context.save();
+          context.scale(.3 + opening * .7 - closing * .48, .5 + opening * .32 - closing * .2);
+          context.rotate(-.06 + sway * .002);
+          context.drawImage(blossom, -80, -84, 160, 160);
+          context.restore();
+        } else if (growth < .77) {
+          const white = growth > .68;
+          drawBud(ease((growth - .65) / .12), white);
+          if (!white) {
+            context.save();
+            context.globalAlpha = 1 - ease((growth - .6) / .08);
+            context.drawImage(blossom, -15, -40, 30, 21);
+            context.restore();
+          }
+        } else {
+          const opening = ease((growth - .77) / .21);
+          ellipse(context, 0, 0, 10, 7, '#9aae61');
+          for (let index = 0; index < 21; index += 1) circle(context, Math.sin(index * 2.399) * 8, Math.cos(index * 2.399) * 5, .7, '#5e794498');
+          if (flight < .55) {
+            context.save();
+            context.globalAlpha *= 1 - ease(flight / .55);
+            context.scale(.38 + opening * .62, .22 + opening * .78);
+            context.drawImage(puff, -80, -80 - (1 - opening) * 25, 160, 160);
+            context.restore();
+          }
+        }
+        context.restore();
+      }
+    }
+    context.restore();
+
+    if (flight > 0) {
+      const random = randomGenerator(443);
+      const flowerX = baseX + headX * scale;
+      const flowerY = baseY + headY * scale;
+      for (let index = 0; index < 65; index += 1) {
+        const angle = random() * Math.PI * 2;
+        const radius = Math.sqrt(random()) * 53 * scale;
+        const delay = random() * .19;
+        const progress = clamp((flight - delay) / (.55 + random() * .2));
+        const speed = .65 + random() * .8;
+        const seedScale = (.24 + random() * .28) * scale;
+        const rise = .15 + random() * .3;
+        if (flight < delay || progress >= 1) continue;
+        const x = flowerX + Math.cos(angle) * radius + Math.pow(progress, .75) * width * speed;
+        const y = flowerY + Math.sin(angle) * radius - Math.sin(progress * Math.PI * .8) * height * rise + Math.sin(progress * 8 + index) * 15;
+        const opacity = ease(progress * 18) * (1 - ease((progress - .76) / .24));
+        drawSeed(x, y, seedScale, -.4 + Math.sin(index + progress * 6) * .4, opacity);
+      }
+      const progress = ease(clamp((flight - .06) / .9));
+      const inverse = 1 - progress;
+      const landingX = width * (landscape ? .5 : width < 600 ? .83 : .66);
+      const landingY = height * .87;
+      const x = inverse ** 3 * (flowerX + 20 * scale) + 3 * inverse ** 2 * progress * width * .93 + 3 * inverse * progress ** 2 * width * 1.02 + progress ** 3 * landingX;
+      const y = inverse ** 3 * (flowerY - 20 * scale) + 3 * inverse ** 2 * progress * height * .12 + 3 * inverse * progress ** 2 * height * .5 + progress ** 3 * (landingY - 22 * scale);
+      if (flight < .97) drawSeed(x, y, .65 * scale, -.45 * Math.sin(progress * Math.PI) + Math.sin(progress * 11) * .15, ease(flight * 15) * (1 - ease((flight - .91) / .06)));
+      if (flight > .91) {
+        const sprout = ease((flight - .91) / .09);
+        context.save();
+        context.translate(landingX, landingY);
+        context.scale(scale, scale);
+        context.strokeStyle = '#536f36';
+        context.lineWidth = 2;
+        context.beginPath();
+        context.moveTo(0, 0);
+        context.quadraticCurveTo(3, -8 * sprout, 0, -18 * sprout);
+        context.stroke();
+        drawLeaf(0, -9 * sprout, 18 * sprout, -.8);
+        drawLeaf(0, -10 * sprout, 16 * sprout, .95);
+        context.restore();
+      }
+    }
+  };
+
+  const render = (timestamp = 0) => {
+    frame = 0;
+    if (destroyed || document.hidden) return;
+    if (dirty || timestamp - lastRender >= 32) {
+      if (state.motion) time += Math.min(timestamp - lastRender, 64);
+      lastRender = timestamp;
+      context.setTransform(1, 0, 0, 1, 0, 0);
+      context.drawImage(background, 0, 0);
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      drawFlower();
+      const random = randomGenerator(875);
+      for (let index = 0; index < 17; index += 1) {
+        const x = (random() * width + time * (.002 + random() * .003)) % width;
+        const y = height * (.45 + random() * .49) + Math.sin(time * .0006 + index) * 5;
+        const alpha = .12 + (.5 + Math.sin(time * .001 + index) * .5) * .3;
+        ellipse(context, x, y, .7 + random() * 1.1, .45 + random() * .65, `rgba(255,249,216,${alpha})`, -.5);
+      }
+      dirty = false;
+    }
+    if (state.motion) frame = requestAnimationFrame(render);
+  };
+
+  const requestRender = () => {
+    dirty = true;
+    if (!frame && !destroyed && !document.hidden) frame = requestAnimationFrame(render);
+  };
+
+  const resize = () => {
+    const bounds = canvas.getBoundingClientRect();
+    const nextWidth = Math.max(1, Math.round(bounds.width));
+    const nextHeight = Math.max(1, Math.round(bounds.height));
+    const nextRatio = Math.min(window.devicePixelRatio || 1, 2);
+    if (nextWidth === width && nextHeight === height && nextRatio === pixelRatio) return;
+    width = nextWidth;
+    height = nextHeight;
+    pixelRatio = nextRatio;
+    canvas.width = background.width = Math.round(width * pixelRatio);
+    canvas.height = background.height = Math.round(height * pixelRatio);
+    paintBackground();
+    requestRender();
+  };
+
+  const onVisibility = () => {
+    cancelAnimationFrame(frame);
+    frame = 0;
+    if (!document.hidden) requestRender();
+  };
+  const observer = new ResizeObserver(resize);
+  observer.observe(canvas);
+  document.addEventListener('visibilitychange', onVisibility);
+  paintFlowers();
+  resize();
+
+  return {
+    setState: (next) => {
+      if (typeof next.growth === 'number') state.growth = clamp(next.growth);
+      if (typeof next.flight === 'number') state.flight = clamp(next.flight);
+      if (typeof next.motion === 'boolean') state.motion = next.motion;
+      requestRender();
+    },
+    destroy: () => {
+      destroyed = true;
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', onVisibility);
+    },
+  };
+};

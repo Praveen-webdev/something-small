@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="{{ .Language.Lang }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="description" content="{{ .Description }}">
+    <meta name="theme-color" content="#d8e4cf">
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'{{ if hugo.IsDevelopment }} ws://localhost:* ws://127.0.0.1:*{{ end }}; object-src 'none'; base-uri 'self'; form-action 'none'">
+    <title>{{ .Title }}</title>
+    <link rel="canonical" href="{{ .Permalink }}">
+    {{ $favicon := resources.FromString "favicon.svg" (partial "seed.html" .) }}
+    <link rel="icon" href="{{ $favicon.RelPermalink }}" type="image/svg+xml">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ .Title }}">
+    <meta property="og:description" content="{{ .Description }}">
+    <meta property="og:url" content="{{ .Permalink }}">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ .Title }}">
+    <meta name="twitter:description" content="{{ .Description }}">
+    {{ $style := resources.Get "style.css" | minify | fingerprint }}
+    <link rel="stylesheet" href="{{ $style.RelPermalink }}" integrity="{{ $style.Data.Integrity }}">
+    {{ $script := resources.Get "main.js" | js.Build (dict "target" "es2019" "minify" true) | fingerprint }}
+    <script src="{{ $script.RelPermalink }}" integrity="{{ $script.Data.Integrity }}" defer></script>
+  </head>
+  <body>
+    <main class="journey" id="journey">
+      <div class="viewport" id="viewport" data-phase="intro">
+        <canvas class="meadow" id="meadow" aria-hidden="true"></canvas>
+        <div class="paper-grain" aria-hidden="true"></div>
+        <header class="site-header">
+          <a class="brand" href="{{ .RelPermalink }}">{{ partial "seed.html" . }}<span>{{ T "brand" }}</span></a>
+          <span class="quiet-moment"><span class="sun-mark" aria-hidden="true"></span>{{ T "quietMoment" }}</span>
+          <button class="wish-shortcut" id="wish-shortcut" type="button">{{ T "skipToWish" }}<span class="diagonal-arrow" aria-hidden="true"></span></button>
+        </header>
+        <div class="story-copy" id="story-copy">
+          <p class="eyebrow" id="eyebrow">{{ T "introEyebrow" }}</p>
+          <h1 id="story-title"><span id="title-line">{{ T "introTitle" }}</span><em id="title-accent">{{ T "introAccent" }}</em></h1>
+          <p class="description" id="description">{{ T "introDescription" }}</p>
+          <div class="wish-field" id="wish-field" hidden>
+            <label class="visually-hidden" for="wish-input">{{ T "wishLabel" }}</label>
+            <input id="wish-input" type="text" maxlength="240" autocomplete="off" placeholder="{{ T "wishPlaceholder" }}" aria-describedby="wish-privacy">
+            <p id="wish-privacy">{{ T "wishPrivacy" }}</p>
+          </div>
+        </div>
+        <span class="meadow-label">{{ T "meadowLabel" }}</span>
+        <nav class="chapter-nav" aria-label="{{ T "chapterNavigation" }}">
+          {{ range $index, $key := slice "chapterIntro" "chapterSprout" "chapterBloom" "chapterChange" "chapterWish" }}
+            <button class="chapter-dot" type="button" data-chapter="{{ $index }}" aria-label="{{ T $key }}" title="{{ T $key }}"{{ if eq $index 0 }} aria-current="step"{{ end }}><span></span></button>
+          {{ end }}
+        </nav>
+        <div class="countdown" id="countdown" role="status" hidden></div>
+        <div class="scene-controls">
+          <div class="grow-controls" id="grow-controls">
+            <p class="gentle-note" id="gentle-note">{{ T "introNote" }}</p>
+            <button class="scroll-prompt" id="scroll-prompt" type="button" aria-label="{{ T "continueJourney" }}"><span id="scroll-label">{{ T "scrollHint" }}</span><span class="scroll-stem" aria-hidden="true"></span></button>
+          </div>
+          <div class="wish-controls" id="wish-controls" hidden>
+            <button class="primary-button" id="microphone-button" type="button"><span class="breath-mark" aria-hidden="true"></span><span>{{ T "useMicrophone" }}</span></button>
+            <button class="text-button" id="tap-button" type="button">{{ T "useTap" }}</button>
+            <p class="control-note" id="microphone-note">{{ T "microphonePrivacy" }}</p>
+          </div>
+          <div class="blow-controls" id="blow-controls" hidden>
+            <button class="primary-button" id="blow-button" type="button">{{ T "blowButton" }}<span class="wind-mark" aria-hidden="true"></span></button>
+            <p class="control-note" id="blow-note" role="status"></p>
+          </div>
+          <div class="end-controls" id="end-controls" hidden>
+            <button class="primary-button" id="replay-button" type="button">{{ T "replay" }}<span class="restart-mark" aria-hidden="true"></span></button>
+            <p class="gentle-note">{{ T "endNote" }}</p>
+          </div>
+          <button class="text-button cancel-button" id="cancel-button" type="button" hidden>{{ T "cancel" }}</button>
+        </div>
+        <footer class="site-footer"><span>{{ T "footer" }}</span><span class="chapter-count" id="chapter-count">01 <span>/</span> 05</span></footer>
+        <noscript><p class="fallback-note">{{ T "noScript" }}</p></noscript>
+      </div>
+    </main>
+    <div id="translations" hidden>
+      {{ range slice "intro" "sprout" "bloom" "change" "wish" "countdown" "listening" "flight" "end" }}
+        <div data-scene="{{ . }}" data-eyebrow="{{ T (printf "%sEyebrow" .) }}" data-title="{{ T (printf "%sTitle" .) }}" data-accent="{{ T (printf "%sAccent" .) }}" data-description="{{ T (printf "%sDescription" .) }}"></div>
+      {{ end }}
+      {{ range slice "scrollHint" "keepGrowing" "requestingMicrophone" "microphonePrivacy" "microphoneDenied" "microphoneUnavailable" "microphoneInterrupted" "tapDescription" "listeningNote" "listeningTimeout" "canvasFallback" }}
+        <span data-message="{{ . }}">{{ T . }}</span>
+      {{ end }}
+    </div>
+  </body>
+</html>
