@@ -32,7 +32,7 @@
         <div class="paper-grain" aria-hidden="true"></div>
         <header class="site-header">
           <span class="brand" id="brand" hidden>{{ partial "seed.html" . }}<span>{{ T "brand" }}</span></span>
-          <button class="sound-toggle" id="sound-toggle" type="button" hidden aria-pressed="true" aria-label="{{ T "soundToggle" }}" title="{{ T "soundToggle" }}"><span class="sound-mark" aria-hidden="true"></span></button>
+          <button class="sound-toggle" id="sound-toggle" type="button" hidden aria-pressed="true" aria-label="{{ T "soundToggle" }}" title="{{ T "soundToggle" }}">{{ partial "sound-mark.html" . }}</button>
         </header>
         <div class="story-copy" id="story-copy">
           <p class="eyebrow" id="eyebrow" hidden></p>

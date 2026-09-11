@@ -85,7 +85,9 @@ tender: "Happy birthday, <name>." in serif italic, nothing more. The existing
 Web Audio, no files, no network, no CSP change. A low wind bed that swells with growth,
 rises through the flight and settles at the end; one soft chime on the reveal.
 Unlocked by `begin`, muted from the start if she ticked the noise box, with an
-always-visible mute control. Written behind a source-agnostic interface so recorded
+always-visible mute control in the header: a speaker glyph with two arcs, struck through
+by a diagonal when muted. An earlier abstract concentric-ring mark was replaced because
+nobody could tell what it was, and its two states differed only by an opacity shift. Written behind a source-agnostic interface so recorded
 audio can replace synthesis later with no rework.
 Blocked alternative: freesound `apiv2` requires a personal API token (and OAuth2 for
 original files), and was returning 503 at the time of decision.

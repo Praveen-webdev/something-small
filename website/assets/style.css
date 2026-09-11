@@ -35,12 +35,11 @@ button { touch-action: manipulation; }
 .brand-seed { width: 2rem; height: 2.55rem; }
 .sound-toggle { margin-left: auto; border: 0; background: transparent; padding: .65rem; display: inline-flex; align-items: center; justify-content: center; opacity: .55; transition: opacity .3s; }
 .sound-toggle:hover { opacity: .9; }
-.sound-mark { position: relative; width: .9rem; height: .9rem; border: 1px solid currentColor; border-radius: 50%; }
-.sound-mark::before, .sound-mark::after { content: ""; position: absolute; border: 1px solid currentColor; border-radius: 50%; transition: opacity .3s; }
-.sound-mark::before { inset: .21rem; }
-.sound-mark::after { inset: -.34rem; opacity: .45; }
-.sound-toggle[aria-pressed="false"] .sound-mark::after { opacity: 0; }
-.sound-toggle[aria-pressed="false"] .sound-mark::before { opacity: .2; }
+.sound-mark { width: 1.35rem; height: auto; display: block; }
+.sound-wave, .sound-slash { transition: opacity .3s; }
+.sound-slash { opacity: 0; }
+.sound-toggle[aria-pressed="false"] .sound-wave { opacity: 0; }
+.sound-toggle[aria-pressed="false"] .sound-slash { opacity: 1; }
 .story-copy { position: absolute; top: 18%; left: 50%; width: min(90%, 48rem); transform: translateX(-50%); text-align: center; }
 .eyebrow { font-size: .62rem; font-weight: 500; letter-spacing: .23em; line-height: 1.6; margin: 0 0 1.35rem; }
 h1 { font-family: var(--serif); font-size: clamp(3rem, 5.2vw, 5.35rem); font-weight: 400; line-height: 1.09; letter-spacing: -.065em; margin: 0; }
