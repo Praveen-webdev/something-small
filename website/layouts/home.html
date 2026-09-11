@@ -50,6 +50,7 @@
           </div>
         </div>
         <p class="wish-echo" id="wish-echo" aria-hidden="true" hidden></p>
+        <button class="replay-spot" id="replay-spot" type="button" hidden><span class="replay-pulse" aria-hidden="true"></span><span class="visually-hidden">{{ T "replay" }}</span></button>
         <nav class="chapter-nav" aria-label="{{ T "chapterNavigation" }}">
           {{ range $index, $key := slice "chapterIntro" "chapterSprout" "chapterBloom" "chapterChange" "chapterWish" }}
             <button class="chapter-dot" type="button" data-chapter="{{ $index }}" aria-label="{{ T $key }}" title="{{ T $key }}"{{ if eq $index 0 }} aria-current="step"{{ end }}><span></span></button>
@@ -71,7 +72,6 @@
             <p class="control-note" id="blow-note" role="status"></p>
           </div>
           <div class="end-controls" id="end-controls" hidden>
-            <button class="primary-button" id="replay-button" type="button">{{ T "replay" }}<span class="restart-mark" aria-hidden="true"></span></button>
             <p class="gentle-note">{{ T "endNote" }}</p>
           </div>
           <button class="text-button cancel-button" id="cancel-button" type="button" hidden>{{ T "cancel" }}</button>

@@ -83,6 +83,11 @@ h1 em { font-weight: 400; color: #607450; letter-spacing: -.058em; }
 .wind-mark { width: 1rem; height: .45rem; border-top: 1px solid; border-bottom: 1px solid; border-radius: 0 .2rem .2rem 0; transform: translateY(-.1rem); }
 .restart-mark { width: .8rem; height: .8rem; border: 1px solid; border-right-color: transparent; border-radius: 50%; position: relative; transform: rotate(25deg); }
 .restart-mark::after { content: ""; position: absolute; right: -.08rem; top: -.13rem; border-top: 1px solid; border-right: 1px solid; width: .3rem; height: .3rem; }
+.replay-spot { position: absolute; width: 4.6rem; height: 4.6rem; margin: -2.3rem 0 0 -2.3rem; padding: 0; border: 0; background: transparent; display: grid; place-items: center; z-index: 6; }
+.replay-pulse { position: relative; width: .62rem; height: .62rem; border-radius: 50%; background: var(--paper); box-shadow: 0 0 0 1px #3d5a3f99, 0 1px 6px #21371f33; }
+.replay-pulse::before, .replay-pulse::after { content: ""; position: absolute; inset: -.22rem; border: 1px solid #35533a; border-radius: 50%; opacity: 0; animation: ripple 3s ease-out infinite; }
+.replay-pulse::after { animation-delay: 1.5s; }
+@keyframes ripple { 0% { transform: scale(.55); opacity: .7; } 100% { transform: scale(3.6); opacity: 0; } }
 .countdown { position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%); font-family: var(--serif); font-size: 5rem; color: var(--ink); width: 7rem; height: 7rem; display: grid; place-items: center; background: #fcf8e9df; border: 1px solid #fff8; border-radius: 50%; box-shadow: 0 0 50px 25px #fcf8e959; }
 .end-controls .gentle-note { font-size: .9rem; margin: 1rem 0 0; }
 .cancel-button { margin-top: .55rem; }
@@ -198,6 +203,8 @@ h1 em { font-weight: 400; color: #607450; letter-spacing: -.058em; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
+  /* The ripple carries the affordance; without it the spot must still be visible. */
+  .replay-pulse::before { opacity: .55; transform: scale(2.1); }
   .viewport:not([data-entered]) #story-title, .viewport:not([data-entered]) .description,
   .viewport:not([data-entered]) .scene-controls, .viewport:not([data-entered]) .chapter-nav { opacity: 1; }
 }

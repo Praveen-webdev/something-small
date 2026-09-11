@@ -27,6 +27,11 @@ export const createMeadow = (canvas) => {
   const seedContext = seedSprite.getContext('2d');
   if (!backdrop || !puffContext || !blossomContext || !seedContext) return null;
   const state = { growth: 0, flight: 0, motion: true };
+
+  const landingPoint = () => ({
+    x: width * (width > height * 1.7 && height < 500 ? .5 : width < 600 ? .83 : .66),
+    y: height * .87,
+  });
   let width = 1;
   let height = 1;
   let pixelRatio = 1;
@@ -473,8 +478,7 @@ export const createMeadow = (canvas) => {
       }
       const progress = ease(clamp((flight - .06) / .9));
       const inverse = 1 - progress;
-      const landingX = width * (landscape ? .5 : width < 600 ? .83 : .66);
-      const landingY = height * .87;
+      const { x: landingX, y: landingY } = landingPoint();
       const x = inverse ** 3 * (flowerX + 20 * scale) + 3 * inverse ** 2 * progress * width * .93 + 3 * inverse * progress ** 2 * width * 1.02 + progress ** 3 * landingX;
       const y = inverse ** 3 * (flowerY - 20 * scale) + 3 * inverse ** 2 * progress * height * .12 + 3 * inverse * progress ** 2 * height * .5 + progress ** 3 * (landingY - 22 * scale);
       if (flight < .97) drawSeed(x, y, .65 * scale, -.45 * Math.sin(progress * Math.PI) + Math.sin(progress * 11) * .15, ease(flight * 15) * (1 - ease((flight - .91) / .06)));
@@ -550,6 +554,7 @@ export const createMeadow = (canvas) => {
   resize();
 
   return {
+    landing: landingPoint,
     setState: (next) => {
       if (typeof next.growth === 'number') state.growth = clamp(next.growth);
       if (typeof next.flight === 'number') state.flight = clamp(next.flight);

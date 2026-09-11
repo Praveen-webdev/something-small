@@ -92,6 +92,18 @@ At the `end` phase, after the seeds land: the wordmark + seed mark fade in centr
 inside the end card as a signature, hold a beat, then settle into the header position
 for the rest of the session. `document.title` swaps at the same beat.
 
+## 8b. Replay lives on the meadow, not in a button
+The "Plant another wish" button is gone. Replay is now a pulsing spot sitting exactly on
+the seed that came to rest — `meadow.landing()` is the single source of truth for that
+point, shared with the sprout `drawFlower` paints at `flight > .91`, so the two cannot
+drift. It appears 3.4s after the ending so the signature and the greeting land first,
+takes keyboard focus when it does, and carries a visually-hidden label. Under
+`prefers-reduced-motion` the ripple is replaced by a static ring so it stays visible.
+
+Known cost: an unlabelled pulse is far less discoverable than a button. "Every ending
+holds a little beginning." now sits under it and points at the sprout, but if she never
+spots it, the piece simply ends — which is a defensible ending, just not a chosen one.
+
 ## 9. Birthday beat — only at the end
 Everything before the flight stays universal. Sequenced under the signature, plain and
 tender: "Happy birthday, <name>." in serif italic, nothing more. The existing

@@ -7,7 +7,7 @@ const elements = Object.fromEntries([
   'description', 'wish-field', 'wish-input', 'heart-note', 'grow-controls', 'gentle-note',
   'scroll-prompt', 'scroll-label', 'wish-controls', 'microphone-button', 'microphone-label',
   'tap-button', 'microphone-note', 'blow-controls', 'blow-button', 'blow-note', 'countdown',
-  'cancel-button', 'end-controls', 'replay-button', 'wish-echo', 'finale', 'signature',
+  'cancel-button', 'end-controls', 'replay-spot', 'wish-echo', 'finale', 'signature',
   'birthday-line', 'brand', 'threshold', 'begin-button', 'option-noisy', 'option-private',
   'sound-toggle', 'confirm', 'confirm-list', 'confirm-continue', 'confirm-back',
 ].map((id) => [id.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()), document.getElementById(id)]));
@@ -43,6 +43,7 @@ let noisy = false;
 let secret = false;
 let revealed = false;
 let echoAnimation = null;
+let spotTimer = 0;
 
 const toGrowth = (amount) => {
   for (let index = 1; index < growthAnchors.length; index += 1) {
@@ -104,6 +105,10 @@ const setControls = () => {
   elements.countdown.hidden = phase !== 'countdown';
   elements.cancelButton.hidden = !['permission', 'countdown', 'listening'].includes(phase);
   elements.endControls.hidden = phase !== 'end';
+  if (phase !== 'end') {
+    clearTimeout(spotTimer);
+    elements.replaySpot.hidden = true;
+  }
   elements.finale.hidden = phase !== 'end';
 };
 
@@ -177,6 +182,15 @@ const revealFinale = () => {
   fadeIn(elements.brand, 2400);
 };
 
+// Replay lives on the meadow itself now: a pulse over the seed that came to rest.
+// It waits for the signature and the greeting to land before asking for attention.
+const placeReplaySpot = () => {
+  const point = meadow?.landing();
+  if (!point) return;
+  elements.replaySpot.style.left = `${point.x}px`;
+  elements.replaySpot.style.top = `${point.y}px`;
+};
+
 const finishFlight = () => {
   phase = 'end';
   flightProgress = 1;
@@ -187,7 +201,13 @@ const finishFlight = () => {
   revealFinale();
   sound?.chime();
   navigator.vibrate?.([0, 18, 90, 26]);
-  elements.replayButton.focus({ preventScroll: true });
+  placeReplaySpot();
+  spotTimer = window.setTimeout(() => {
+    if (phase !== 'end') return;
+    placeReplaySpot();
+    elements.replaySpot.hidden = false;
+    elements.replaySpot.focus({ preventScroll: true });
+  }, reducedMotion.matches ? 1200 : 3400);
 };
 
 const animateFlight = (timestamp) => {
@@ -317,6 +337,7 @@ const useTap = () => {
 
 const replay = () => {
   clearTimeout(timer);
+  clearTimeout(spotTimer);
   cancelAnimationFrame(flightFrame);
   stopMicrophone();
   clearEcho();
@@ -406,16 +427,20 @@ elements.microphoneButton.addEventListener('click', requestMicrophone);
 elements.tapButton.addEventListener('click', useTap);
 elements.blowButton.addEventListener('click', releaseSeeds);
 elements.cancelButton.addEventListener('click', returnToWish);
-elements.replayButton.addEventListener('click', replay);
+elements.replaySpot.addEventListener('click', replay);
 window.addEventListener('scroll', () => {
   if (!scrollFrame && phase === 'growing') scrollFrame = requestAnimationFrame(updateGrowth);
 }, { passive: true });
-window.addEventListener('resize', measure, { passive: true });
+window.addEventListener('resize', () => {
+  measure();
+  if (!elements.replaySpot.hidden) placeReplaySpot();
+}, { passive: true });
 window.addEventListener('pagehide', () => {
   stopMicrophone();
   clearTimeout(timer);
   cancelAnimationFrame(flightFrame);
   cancelAnimationFrame(scrollFrame);
+  clearTimeout(spotTimer);
 });
 window.addEventListener('pageshow', (event) => {
   if (!event.persisted) return;
