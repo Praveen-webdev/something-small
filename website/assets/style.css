@@ -104,10 +104,10 @@ h1 em { font-weight: 400; color: #607450; letter-spacing: -.058em; }
 .threshold-options { list-style: none; margin: 0 0 2.1rem; padding: 0; display: flex; flex-direction: column; gap: .2rem; }
 .tick { display: flex; align-items: center; gap: .9rem; padding: .75rem .5rem; font-size: .85rem; text-align: left; cursor: pointer; }
 .tick input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-.tick-mark { flex: none; width: .95rem; height: .95rem; border: 1px solid #58706099; border-radius: 50%; position: relative; transition: border-color .35s, box-shadow .5s; }
-.tick-mark::after { content: ""; position: absolute; inset: .23rem; border-radius: 50%; background: var(--forest); opacity: 0; transform: scale(.35); transition: opacity .35s, transform .5s cubic-bezier(.2,.9,.3,1.35); }
-.tick input:checked + .tick-mark { border-color: var(--forest); box-shadow: 0 0 0 4px #36583d12, 0 0 14px 3px #cbdaa77a; }
-.tick input:checked + .tick-mark::after { opacity: 1; transform: scale(1); }
+.tick-mark { flex: none; width: 1.05rem; height: 1.05rem; border: 1px solid #58706099; border-radius: .3rem; position: relative; background: #ffffff30; transition: border-color .35s, background .35s, box-shadow .5s; }
+.tick-mark::after { content: ""; position: absolute; left: .31rem; top: .13rem; width: .3rem; height: .55rem; border: solid var(--paper); border-width: 0 1.5px 1.5px 0; transform: rotate(42deg) scale(.4); transform-origin: center; opacity: 0; transition: opacity .28s, transform .45s cubic-bezier(.2,.9,.3,1.4); }
+.tick input:checked + .tick-mark { border-color: var(--forest); background: var(--forest); box-shadow: 0 0 0 4px #36583d12, 0 0 14px 3px #cbdaa77a; }
+.tick input:checked + .tick-mark::after { opacity: 1; transform: rotate(42deg) scale(1); }
 .tick input:focus-visible + .tick-mark { outline: 2px solid var(--ink); outline-offset: 4px; }
 .threshold-hint { margin: 1.2rem 0 0; font-size: .52rem; font-weight: 500; letter-spacing: .18em; color: var(--muted); }
 

@@ -17,14 +17,23 @@ safe to tap ("something small, for you"), plus one line inviting her to open it
 somewhere quiet — which primes the threshold. No dandelion imagery.
 
 ## 3. Threshold on load
-A still, near-empty first frame. Two optional checkboxes, drawn as plain ink dots
-that bloom into soft light when ticked — never seeds.
-- `there's noise around me` → lead with tap, not the microphone; audio starts muted.
-- `someone's nearby` → at chapter 4 the typed wish is replaced with
-  "keep this one in your heart"; nothing rides the flight.
-Rules: **`begin` is always available from the first moment.** Both ticks default off,
-and default off means the full experience. Skipping costs nothing.
-The `begin` tap doubles as the gesture that unlocks Web Audio.
+A still, near-empty first frame: "Before we begin." / "Find somewhere alone you can be
+still for a minute or two." Two square checkboxes (round marks read as radio buttons),
+each filling forest-green with a check when ticked.
+- `There's noise around me` — off by default. On: lead with tap rather than the
+  microphone, and start muted.
+- `No one's nearby` — **on by default.** Off: at chapter 4 the typed wish is replaced
+  with "keep this one in your heart", and nothing rides the flight.
+
+The second tick is pre-ticked deliberately. Phrased affirmatively, an unticked box would
+mean "someone may be nearby", so skipping the threshold would silently drop the typed
+wish — punishing exactly the person who skips. Pre-ticking keeps the default the full
+experience while still letting the tick do real work. It is a preference, not consent,
+so a default tick is not a dark pattern here.
+
+Rules: **`begin` is always available from the first moment.** Both boxes are reset by JS
+on every load, since browsers restore form state across a soft reload and the site must
+always start fresh. The `begin` tap doubles as the gesture that unlocks Web Audio.
 
 ## 4. Chrome
 Removed: the "Make a wish" shortcut, "A MOMENT OF QUIET", "THE WISHING MEADOW",

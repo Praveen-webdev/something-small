@@ -342,7 +342,7 @@ const begin = () => {
   if (entered) return;
   entered = true;
   noisy = elements.optionNoisy.checked;
-  secret = elements.optionPrivate.checked;
+  secret = !elements.optionPrivate.checked;
   if (noisy) {
     elements.microphoneButton.classList.replace('primary-button', 'text-button');
     elements.tapButton.classList.replace('text-button', 'primary-button');
@@ -405,5 +405,8 @@ if (!meadow) {
   elements.gentleNote.textContent = messages.canvasFallback;
   console.warn('Canvas 2D is not available in this browser.');
 }
+// Browsers restore form state across a soft reload; every visit must start fresh.
+elements.optionNoisy.checked = false;
+elements.optionPrivate.checked = true;
 elements.beginButton.focus({ preventScroll: true });
 measure();

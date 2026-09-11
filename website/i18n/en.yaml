@@ -131,15 +131,13 @@ canvasFallback:
 thresholdTitle:
   other: "Before we begin."
 thresholdNote:
-  other: "Find somewhere you can be still for a minute or two."
+  other: "Find somewhere alone you can be still for a minute or two."
 optionNoisy:
   other: "There’s noise around me"
 optionPrivate:
-  other: "Someone’s nearby"
+  other: "No one’s nearby"
 begin:
   other: "Begin"
-thresholdHint:
-  other: "BOTH ARE OPTIONAL. SKIP THEM IF YOU LIKE."
 heartNote:
   other: "Keep this one in your heart. No need to write it down."
 useTapPrimary:
