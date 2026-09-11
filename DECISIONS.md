@@ -21,7 +21,8 @@ A still, near-empty first frame: "Before we begin." / "Find somewhere alone you 
 still for a minute or two." Two square checkboxes (round marks read as radio buttons),
 each filling forest-green with a check when ticked.
 - `No noise around me` — off by default. Off means there is noise: lead with tap rather
-  than the microphone, and start muted.
+  than the microphone. It does not touch audio; noise means the mic cannot hear her
+  breath, which says nothing about whether the wind should play.
 - `No one's nearby` — off by default. Off means someone may be: at chapter 4 the typed
   wish is replaced with "keep this one in your heart", and nothing rides the flight.
 
@@ -83,7 +84,7 @@ tender: "Happy birthday, <name>." in serif italic, nothing more. The existing
 ## 10. Sound — synthesised now, swappable later
 Web Audio, no files, no network, no CSP change. A low wind bed that swells with growth,
 rises through the flight and settles at the end; one soft chime on the reveal.
-Unlocked by `begin`, muted from the start if she ticked the noise box, with an
+Unlocked by `begin` and playing from that moment, with an
 always-visible mute control in the header: a speaker glyph with two arcs, struck through
 by a diagonal when muted. An earlier abstract concentric-ring mark was replaced because
 nobody could tell what it was, and its two states differed only by an opacity shift. Written behind a source-agnostic interface so recorded

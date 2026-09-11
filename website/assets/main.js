@@ -350,7 +350,10 @@ const begin = () => {
     elements.tapButton.textContent = messages.useTapPrimary;
   }
   sound?.unlock();
-  setMuted(noisy);
+  // Sound is not tied to the noise tick: noise means the microphone will not hear her
+  // breath, which says nothing about whether the wind should play. Mute stays one tap
+  // away in the header, and nothing sounds until she has tapped `begin` herself.
+  setMuted(false);
   elements.soundToggle.hidden = !sound;
   document.body.classList.remove('held');
   elements.viewport.dataset.entered = 'true';
