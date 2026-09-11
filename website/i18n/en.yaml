@@ -150,3 +150,13 @@ revealedTitle:
   other: "a little wish"
 birthdayGreeting:
   other: "Happy birthday, {{ .name }}."
+confirmTitle:
+  other: "Just checking."
+confirmLead:
+  other: "You’ve left these unticked:"
+confirmNote:
+  other: "Which is completely fine. It only means we’ll keep things a little gentler."
+confirmContinue:
+  other: "Continue anyway"
+confirmBack:
+  other: "Let me tick them"

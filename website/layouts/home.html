@@ -89,6 +89,16 @@
         </ul>
         <button class="primary-button" id="begin-button" type="button">{{ T "begin" }}</button>
       </div>
+      <div class="confirm" id="confirm" role="dialog" aria-modal="true" aria-labelledby="confirm-title" hidden>
+        <div class="confirm-card">
+          <p class="confirm-title" id="confirm-title">{{ T "confirmTitle" }}</p>
+          <p class="confirm-lead">{{ T "confirmLead" }}</p>
+          <ul class="confirm-list" id="confirm-list"></ul>
+          <p class="confirm-note">{{ T "confirmNote" }}</p>
+          <button class="primary-button" id="confirm-continue" type="button">{{ T "confirmContinue" }}</button>
+          <button class="text-button" id="confirm-back" type="button">{{ T "confirmBack" }}</button>
+        </div>
+      </div>
     </div>
     <div id="translations" hidden>
       {{ range slice "intro" "sprout" "bloom" "change" "wish" "countdown" "listening" "flight" "end" }}

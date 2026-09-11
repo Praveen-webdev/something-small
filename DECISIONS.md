@@ -31,7 +31,13 @@ experience on every axis. Accepted knowingly. The cost is that the typed wish ri
 flight does not fire unless she ticks the second box; the mic button and the header mute
 control both remain reachable regardless, so nothing is unreachable, only unlit.
 
-Rules: **`begin` is always available from the first moment.** Both boxes are reset by JS
+Tapping `begin` with either box unticked opens one gentle dialogue — "Just checking." —
+that names the unticked boxes back to her and offers "Continue anyway" / "Let me tick
+them". It deliberately never says what changes: that copy would give the meadow away
+before she has seen a frame of it. Both exits are one tap and weighted equally, so it
+reads as a nudge rather than confirmshaming. With both boxes ticked it never appears.
+
+Rules: **`begin` is never blocked — the dialogue can always be walked straight through.** Both boxes are reset by JS
 on every load, since browsers restore form state across a soft reload and the site must
 always start fresh. The `begin` tap doubles as the gesture that unlocks Web Audio.
 

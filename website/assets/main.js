@@ -9,7 +9,7 @@ const elements = Object.fromEntries([
   'tap-button', 'microphone-note', 'blow-controls', 'blow-button', 'blow-note', 'countdown',
   'cancel-button', 'end-controls', 'replay-button', 'wish-echo', 'finale', 'signature',
   'birthday-line', 'brand', 'threshold', 'begin-button', 'option-noisy', 'option-private',
-  'sound-toggle',
+  'sound-toggle', 'confirm', 'confirm-list', 'confirm-continue', 'confirm-back',
 ].map((id) => [id.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()), document.getElementById(id)]));
 const scenes = Object.fromEntries([...document.querySelectorAll('[data-scene]')].map((element) => [element.dataset.scene, element.dataset]));
 const messages = Object.fromEntries([...document.querySelectorAll('[data-message]')].map((element) => [element.dataset.message, element.textContent]));
@@ -364,9 +364,43 @@ const begin = () => {
   elements.scrollPrompt.focus({ preventScroll: true });
 };
 
+const ticks = () => [elements.optionNoisy, elements.optionPrivate];
+
+// A nudge, never a toll gate: the dialogue only names the boxes back to her and both
+// ways out are one tap. It deliberately says nothing about what changes, because that
+// copy would give the meadow away before she has seen a single frame of it.
+const closeConfirm = () => {
+  elements.confirm.hidden = true;
+  (ticks().find((input) => !input.checked) || elements.beginButton).focus({ preventScroll: true });
+};
+
+const askBeforeBeginning = () => {
+  const pending = ticks().filter((input) => !input.checked);
+  if (!pending.length) {
+    begin();
+    return;
+  }
+  elements.confirmList.textContent = '';
+  pending.forEach((input) => {
+    const item = document.createElement('li');
+    item.textContent = input.closest('.tick').querySelector('span:last-of-type').textContent;
+    elements.confirmList.append(item);
+  });
+  elements.confirm.hidden = false;
+  elements.confirmContinue.focus({ preventScroll: true });
+};
+
 chapterButtons.forEach((button, index) => button.addEventListener('click', () => goToChapter(index)));
 elements.scrollPrompt.addEventListener('click', () => goToChapter(Math.min(4, chapter + 1)));
-elements.beginButton.addEventListener('click', begin);
+elements.beginButton.addEventListener('click', askBeforeBeginning);
+elements.confirmContinue.addEventListener('click', () => {
+  elements.confirm.hidden = true;
+  begin();
+});
+elements.confirmBack.addEventListener('click', closeConfirm);
+elements.threshold.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !elements.confirm.hidden) closeConfirm();
+});
 elements.soundToggle.addEventListener('click', () => setMuted(elements.soundToggle.getAttribute('aria-pressed') === 'true'));
 elements.microphoneButton.addEventListener('click', requestMicrophone);
 elements.tapButton.addEventListener('click', useTap);

@@ -110,6 +110,15 @@ h1 em { font-weight: 400; color: #607450; letter-spacing: -.058em; }
 .tick input:focus-visible + .tick-mark { outline: 2px solid var(--ink); outline-offset: 4px; }
 .threshold-hint { margin: 1.2rem 0 0; font-size: .52rem; font-weight: 500; letter-spacing: .18em; color: var(--muted); }
 
+.confirm { position: absolute; inset: 0; display: grid; place-items: center; padding: 2.5rem 1.6rem; background: #f4f1e2f2; }
+.confirm-card { width: min(100%, 21rem); text-align: center; }
+.confirm-title { margin: 0; font-family: var(--serif); font-style: italic; font-size: clamp(1.5rem, 6.2vw, 1.95rem); letter-spacing: -.04em; }
+.confirm-lead { margin: 1.1rem 0 .7rem; font-size: .62rem; font-weight: 500; letter-spacing: .18em; color: var(--muted); }
+.confirm-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .35rem; }
+.confirm-list li { font-family: var(--serif); font-style: italic; font-size: 1.05rem; color: #3d5a3f; }
+.confirm-list li::before { content: "—"; margin-right: .45rem; opacity: .45; }
+.confirm-note { margin: 1.2rem auto 1.8rem; max-width: 18rem; font-size: .78rem; line-height: 1.75; color: var(--muted); text-wrap: balance; }
+
 /* Staged entrance: the page breathes in rather than cutting on. */
 .viewport:not([data-entered]) #story-title, .viewport:not([data-entered]) .description,
 .viewport:not([data-entered]) .scene-controls, .viewport:not([data-entered]) .chapter-nav { opacity: 0; }
