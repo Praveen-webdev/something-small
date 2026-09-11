@@ -105,23 +105,23 @@ replay:
 endNote:
   other: "Every ending holds a little beginning."
 scrollHint:
-  other: "SCROLL TO GROW"
-keepGrowing:
+  other: "SCROLL GENTLY"
+keepScrolling:
   other: "KEEP SCROLLING"
 continueJourney:
   other: "Continue the journey"
 chapterNavigation:
-  other: "The life of a little wish"
+  other: "Chapters"
 chapterIntro:
-  other: "The meadow"
+  other: "Chapter one"
 chapterSprout:
-  other: "A new beginning"
+  other: "Chapter two"
 chapterBloom:
-  other: "A golden bloom"
+  other: "Chapter three"
 chapterChange:
-  other: "A quiet change"
+  other: "Chapter four"
 chapterWish:
-  other: "Make your wish"
+  other: "Chapter five"
 cancel:
   other: "Back to my wish"
 noScript:

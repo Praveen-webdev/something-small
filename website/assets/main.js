@@ -122,7 +122,7 @@ const updateGrowth = () => {
       if (index === chapter) button.setAttribute('aria-current', 'step');
       else button.removeAttribute('aria-current');
     });
-    elements.scrollLabel.textContent = messages[chapter ? 'keepGrowing' : 'scrollHint'];
+    elements.scrollLabel.textContent = messages[chapter ? 'keepScrolling' : 'scrollHint'];
     elements.gentleNote.hidden = chapter > 0;
     setControls();
   }

@@ -104,7 +104,7 @@
       {{ range slice "intro" "sprout" "bloom" "change" "wish" "countdown" "listening" "flight" "end" }}
         <div data-scene="{{ . }}" data-eyebrow="{{ if ne . "intro" }}{{ T (printf "%sEyebrow" .) }}{{ end }}" data-title="{{ T (printf "%sTitle" .) }}" data-accent="{{ T (printf "%sAccent" .) }}" data-description="{{ T (printf "%sDescription" .) }}"></div>
       {{ end }}
-      {{ range slice "scrollHint" "keepGrowing" "requestingMicrophone" "microphonePrivacy" "microphoneDenied" "microphoneUnavailable" "microphoneInterrupted" "tapDescription" "listeningNote" "listeningTimeout" "canvasFallback" "useTapPrimary" "useMicrophoneSecondary" "revealedTitle" }}
+      {{ range slice "scrollHint" "keepScrolling" "requestingMicrophone" "microphonePrivacy" "microphoneDenied" "microphoneUnavailable" "microphoneInterrupted" "tapDescription" "listeningNote" "listeningTimeout" "canvasFallback" "useTapPrimary" "useMicrophoneSecondary" "revealedTitle" }}
         <span data-message="{{ . }}">{{ T . }}</span>
       {{ end }}
     </div>

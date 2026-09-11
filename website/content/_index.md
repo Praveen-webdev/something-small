@@ -1,5 +1,5 @@
 ---
-title: "a quiet moment"
+title: "A small thing"
 description: "Open it somewhere quiet, when you have a minute."
 params:
   shareTitle: "something small, for you"

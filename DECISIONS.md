@@ -10,6 +10,16 @@ Nothing may hint at "dandelion" or "wish" before the end.
   The favicon currently reuses `partials/seed.html` — needs its own neutral mark.
 - The canvas keeps its natural bloom-at-chapter-2 arc. That is the story unfolding,
   not a leak; `drawFlower`/`drawBud` are untouched.
+- Tab title is "A small thing".
+- The scroll cue said "SCROLL TO GROW" — now "SCROLL GENTLY".
+- The chapter dots carried `aria-label`/`title` of "The meadow", "A golden bloom",
+  "Make your wish" and the nav was labelled "The life of a little wish". Those are
+  desktop tooltips and screen-reader announcements present from the first frame, so
+  they are now "Chapter one" … "Chapter five" under a nav labelled "Chapters".
+
+Audited against the built output: the only visible first-frame text is the threshold,
+the intro copy and the scroll cue. The single thematic word left is "Big wishes." in the
+intro headline, kept deliberately, and it sits behind the threshold until she begins.
 
 ## 2. Link preview — inviting, blank of content
 The preview card is the true first frame. Warm and clearly personal so it reads as
