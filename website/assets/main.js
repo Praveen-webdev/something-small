@@ -4,8 +4,8 @@ import { createSound } from './sound.js';
 
 const elements = Object.fromEntries([
   'journey', 'viewport', 'meadow', 'story-copy', 'eyebrow', 'title-line', 'title-accent',
-  'description', 'wish-field', 'wish-input', 'heart-note', 'grow-controls', 'gentle-note',
-  'scroll-prompt', 'scroll-label', 'wish-controls', 'microphone-button', 'microphone-label',
+  'description', 'wish-field', 'wish-input', 'grow-controls', 'gentle-note',
+  'scroll-prompt', 'scroll-label', 'wish-controls', 'microphone-button',
   'tap-button', 'microphone-note', 'blow-controls', 'blow-button', 'blow-note', 'countdown',
   'cancel-button', 'end-controls', 'replay-spot', 'wish-echo', 'finale', 'signature',
   'birthday-line', 'brand', 'threshold', 'begin-button', 'option-noisy', 'option-private',
@@ -39,8 +39,6 @@ let breathListener = null;
 let requestId = 0;
 let microphoneMessage = '';
 let entered = false;
-let noisy = false;
-let secret = false;
 let revealed = false;
 let echoAnimation = null;
 let spotTimer = 0;
@@ -100,8 +98,7 @@ const setControls = () => {
   const wishVisible = isWish || phase === 'permission';
   elements.viewport.dataset.phase = phase === 'growing' ? chapterScenes[chapter] : phase;
   elements.growControls.hidden = phase !== 'growing' || isWish;
-  elements.wishField.hidden = !wishVisible || secret;
-  elements.heartNote.hidden = !wishVisible || !secret;
+  elements.wishField.hidden = !wishVisible;
   elements.wishControls.hidden = !wishVisible;
   elements.microphoneButton.disabled = phase === 'permission';
   elements.blowControls.hidden = phase !== 'listening';
@@ -229,7 +226,7 @@ const animateFlight = (timestamp) => {
 // Her words ride the seeds and dissolve with them: carried, then let go. The text never
 // leaves this variable, so "never saved or sent" stays literally true.
 const echoWish = (wish) => {
-  if (!wish || secret) return;
+  if (!wish) return;
   elements.wishEcho.textContent = wish;
   elements.wishEcho.hidden = false;
   if (reducedMotion.matches) {
@@ -396,23 +393,13 @@ const setMuted = (value) => {
   elements.soundToggle.setAttribute('aria-pressed', String(!value));
 };
 
-// "Begin" is never gated on the checkboxes: skipping them costs nothing and yields the
-// full experience. It doubles as the gesture browsers require before audio may start.
+// The threshold ticks steer nothing. They are a settling-in ritual, and everyone gets
+// the identical experience whatever they answer, so no one can accidentally opt out of
+// the best version of this. `begin` also supplies the gesture audio needs to start.
 const begin = () => {
   if (entered) return;
   entered = true;
-  noisy = !elements.optionNoisy.checked;
-  secret = !elements.optionPrivate.checked;
-  if (noisy) {
-    elements.microphoneButton.classList.replace('primary-button', 'text-button');
-    elements.tapButton.classList.replace('text-button', 'primary-button');
-    elements.microphoneLabel.textContent = messages.useMicrophoneSecondary;
-    elements.tapButton.textContent = messages.useTapPrimary;
-  }
   sound?.unlock();
-  // Sound is not tied to the noise tick: noise means the microphone will not hear her
-  // breath, which says nothing about whether the wind should play. Mute stays one tap
-  // away in the header, and nothing sounds until she has tapped `begin` herself.
   setMuted(false);
   elements.soundToggle.hidden = !sound;
   document.body.classList.remove('held');

@@ -138,12 +138,6 @@ optionPrivate:
   other: "No one’s nearby"
 begin:
   other: "Begin"
-heartNote:
-  other: "Keep this one in your heart. No need to write it down."
-useTapPrimary:
-  other: "Send it with a gentle tap"
-useMicrophoneSecondary:
-  other: "or blow with my breath"
 soundToggle:
   other: "Sound"
 revealedTitle:
@@ -155,7 +149,7 @@ confirmTitle:
 confirmLead:
   other: "You’ve left these unticked:"
 confirmNote:
-  other: "Which is completely fine. It only means we’ll keep things a little gentler."
+  other: "Nothing is stopping you. It is only nicer when it is just you."
 confirmContinue:
   other: "Continue anyway"
 confirmBack:

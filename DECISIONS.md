@@ -28,28 +28,24 @@ somewhere quiet — which primes the threshold. No dandelion imagery.
 
 ## 3. Threshold on load
 A still, near-empty first frame: "Before we begin." / "Find somewhere alone you can be
-still for a minute or two." Two square checkboxes (round marks read as radio buttons),
-each filling forest-green with a check when ticked.
-- `No noise around me` — off by default. Off means there is noise: lead with tap rather
-  than the microphone. It does not touch audio; noise means the mic cannot hear her
-  breath, which says nothing about whether the wind should play.
-- `No one's nearby` — off by default. Off means someone may be: at chapter 4 the typed
-  wish is replaced with "keep this one in your heart", and nothing rides the flight.
+still for a minute or two." Two square checkboxes, unticked by default:
+`No noise around me` and `No one's nearby`.
 
-Both are phrased affirmatively and both start unticked, so the default is the discreet
-experience on every axis. Accepted knowingly. The cost is that the typed wish riding the
-flight does not fire unless she ticks the second box; the mic button and the header mute
-control both remain reachable regardless, so nothing is unreachable, only unlit.
+**The ticks steer nothing.** Everyone gets the identical experience whatever they answer.
+They are a settling-in ritual — a way of asking her to arrange the room before she starts
+— not a control surface. Revised from an earlier branching design: once the labels were
+phrased affirmatively and left unticked by default, every branch punished the person who
+tapped straight through, and no one should be able to accidentally opt out of the best
+version of a gift.
 
 Tapping `begin` with either box unticked opens one gentle dialogue — "Just checking." —
-that names the unticked boxes back to her and offers "Continue anyway" / "Let me tick
-them". It deliberately never says what changes: that copy would give the meadow away
-before she has seen a frame of it. Both exits are one tap and weighted equally, so it
-reads as a nudge rather than confirmshaming. With both boxes ticked it never appears.
+naming them back and offering "Continue anyway" / "Let me tick them". Its copy speaks
+about her room, not about the site: "Nothing is stopping you. It is only nicer when it is
+just you." It must never claim a consequence, because there isn't one.
 
-Rules: **`begin` is never blocked — the dialogue can always be walked straight through.** Both boxes are reset by JS
-on every load, since browsers restore form state across a soft reload and the site must
-always start fresh. The `begin` tap doubles as the gesture that unlocks Web Audio.
+Rules: **`begin` is never blocked.** Both boxes are reset by JS on every load, since
+browsers restore form state across a soft reload and the site must always start fresh.
+The `begin` tap doubles as the gesture that unlocks Web Audio.
 
 ## 4. Chrome
 Removed: the "Make a wish" shortcut, "A MOMENT OF QUIET", "THE WISHING MEADOW",

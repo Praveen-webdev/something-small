@@ -43,7 +43,6 @@
             <input id="wish-input" type="text" maxlength="240" autocomplete="off" placeholder="{{ T "wishPlaceholder" }}" aria-describedby="wish-privacy">
             <p id="wish-privacy">{{ T "wishPrivacy" }}</p>
           </div>
-          <p class="heart-note" id="heart-note" hidden>{{ T "heartNote" }}</p>
           <div class="finale" id="finale" hidden>
             <span class="signature" id="signature" hidden>{{ partial "seed.html" . }}<span>{{ T "brand" }}</span></span>
             {{ with site.Params.recipient }}<p class="birthday-line" id="birthday-line" hidden>{{ T "birthdayGreeting" (dict "name" .) }}</p>{{ end }}
@@ -63,7 +62,7 @@
             <button class="scroll-prompt" id="scroll-prompt" type="button" aria-label="{{ T "continueJourney" }}"><span id="scroll-label">{{ T "scrollHint" }}</span><span class="scroll-stem" aria-hidden="true"></span></button>
           </div>
           <div class="wish-controls" id="wish-controls" hidden>
-            <button class="primary-button" id="microphone-button" type="button"><span class="breath-mark" aria-hidden="true"></span><span id="microphone-label">{{ T "useMicrophone" }}</span></button>
+            <button class="primary-button" id="microphone-button" type="button"><span class="breath-mark" aria-hidden="true"></span><span>{{ T "useMicrophone" }}</span></button>
             <button class="text-button" id="tap-button" type="button">{{ T "useTap" }}</button>
             <p class="control-note" id="microphone-note">{{ T "microphonePrivacy" }}</p>
           </div>
@@ -104,7 +103,7 @@
       {{ range slice "intro" "sprout" "bloom" "change" "wish" "countdown" "listening" "flight" "end" }}
         <div data-scene="{{ . }}" data-eyebrow="{{ if ne . "intro" }}{{ T (printf "%sEyebrow" .) }}{{ end }}" data-title="{{ T (printf "%sTitle" .) }}" data-accent="{{ T (printf "%sAccent" .) }}" data-description="{{ T (printf "%sDescription" .) }}"></div>
       {{ end }}
-      {{ range slice "scrollHint" "keepScrolling" "requestingMicrophone" "microphonePrivacy" "microphoneDenied" "microphoneUnavailable" "microphoneInterrupted" "tapDescription" "listeningNote" "listeningTimeout" "canvasFallback" "useTapPrimary" "useMicrophoneSecondary" "revealedTitle" }}
+      {{ range slice "scrollHint" "keepScrolling" "requestingMicrophone" "microphonePrivacy" "microphoneDenied" "microphoneUnavailable" "microphoneInterrupted" "tapDescription" "listeningNote" "listeningTimeout" "canvasFallback" "revealedTitle" }}
         <span data-message="{{ . }}">{{ T . }}</span>
       {{ end }}
     </div>
