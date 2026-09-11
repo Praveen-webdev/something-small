@@ -233,12 +233,16 @@ const echoWish = (wish) => {
   elements.wishEcho.hidden = false;
   if (reducedMotion.matches) {
     echoAnimation = elements.wishEcho.animate([{ opacity: 0 }, { opacity: 0.85, offset: 0.25 }, { opacity: 0.85, offset: 0.7 }, { opacity: 0 }], { duration: 1600, easing: 'ease-out' });
+    // No drift under reduced motion; the fade alone carries it.
   } else {
+    // Carried on the same wind as the seeds: they leave rightward and rising, so the
+    // words do too. Straight up read as the text escaping the picture rather than
+    // travelling with it.
     echoAnimation = elements.wishEcho.animate([
-      { opacity: 0, translate: '0 1.4rem' },
-      { opacity: 0.9, translate: '0 0', offset: 0.2 },
-      { opacity: 0.82, translate: '0 -1.6rem', offset: 0.62 },
-      { opacity: 0, translate: '0 -4rem' },
+      { opacity: 0, translate: '-1.6rem 1.4rem', rotate: '-1.5deg' },
+      { opacity: 0.9, translate: '0 0', rotate: '0deg', offset: 0.2 },
+      { opacity: 0.8, translate: '3.6rem -1.9rem', rotate: '1.4deg', offset: 0.58 },
+      { opacity: 0, translate: '11rem -4.4rem', rotate: '3.2deg' },
     ], { duration: 7200, easing: 'cubic-bezier(.25,.6,.3,1)' });
   }
   echoAnimation.finished.then(clearEcho, () => {});
