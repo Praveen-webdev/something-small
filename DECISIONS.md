@@ -39,11 +39,22 @@ All of it is upfront, but arrives in beats: meadow → title → description →
 rush here." carries that job alone, sitting where it's needed next to the scroll cue.
 `prefers-reduced-motion` gets everything at once.
 
-## 6. Pacing — keep the length, rebalance the beats
-Hold 570vh. Move the chapter thresholds from `0.07 / 0.34 / 0.6 / 0.93` to roughly
-`0.06 / 0.28 / 0.5 / 0.75`, so chapter 3 stops eating a third of the journey and the
-wish chapter opens with scroll still left underneath her. Removes the "slammed into
-the end" feeling on a hard flick.
+## 6. Pacing — remap the growth curve, not the cut points
+Revised during implementation. The chapter thresholds are not arbitrary: they are locked
+to the canvas stage map in `drawFlower` (yellow flower opens `.37`, closes `.55-.61`,
+whitens `.68`, seedhead opens `.77-.98`). Moving them to `0.5 / 0.75` would have put
+"Not every ending is an ending" over a still-yellow flower and the wish prompt over a
+closed bud with no seedhead to blow.
+
+So the cut points and the canvas stay untouched, and scroll is remapped onto growth
+through a piecewise-linear curve (`growthAnchors` in `main.js`):
+
+    scroll  0.00 0.06 0.30 0.55 0.78 1.00
+    growth  0.00 0.07 0.34 0.60 0.93 1.00
+
+Same intended outcome: the wish chapter now occupies the last 22% of the scroll instead
+of the last 7%, so a hard flick no longer slams into it, and the seedhead finishes
+opening while she reads the prompt. Copy and visuals stay perfectly in sync.
 
 ## 7. The wish rides the flight, then dissolves
 Her typed words fade in during the 8.5s flight — serif, low contrast, drifting upward

@@ -1,11 +1,5 @@
 brand:
   other: "a little wish"
-quietMoment:
-  other: "A MOMENT OF QUIET"
-skipToWish:
-  other: "Make a wish"
-introEyebrow:
-  other: "SOMEWHERE, AWAY FROM THE HURRY"
 introTitle:
   other: "Big wishes."
 introAccent:
@@ -128,13 +122,33 @@ chapterChange:
   other: "A quiet change"
 chapterWish:
   other: "Make your wish"
-footer:
-  other: "A SMALL REMINDER THAT WONDER IS STILL EVERYWHERE."
-meadowLabel:
-  other: "THE WISHING MEADOW"
 cancel:
   other: "Back to my wish"
 noScript:
   other: "Turn on JavaScript to watch the meadow grow and send your wish into the wind."
 canvasFallback:
   other: "Your browser cannot paint this meadow, but your wish is still welcome."
+thresholdTitle:
+  other: "Before we begin."
+thresholdNote:
+  other: "Find somewhere you can be still for a minute or two."
+optionNoisy:
+  other: "There’s noise around me"
+optionPrivate:
+  other: "Someone’s nearby"
+begin:
+  other: "Begin"
+thresholdHint:
+  other: "BOTH ARE OPTIONAL. SKIP THEM IF YOU LIKE."
+heartNote:
+  other: "Keep this one in your heart. No need to write it down."
+useTapPrimary:
+  other: "Send it with a gentle tap"
+useMicrophoneSecondary:
+  other: "or blow with my breath"
+soundToggle:
+  other: "Sound"
+revealedTitle:
+  other: "a little wish"
+birthdayGreeting:
+  other: "Happy birthday, {{ .name }}."

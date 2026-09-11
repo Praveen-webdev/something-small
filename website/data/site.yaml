@@ -1,4 +1,4 @@
-title: A Little Wish
+title: a quiet moment
 languageCode: en
 defaultContentLanguage: en
 enableRobotsTXT: true
@@ -6,3 +6,6 @@ disableKinds:
   - taxonomy
   - term
   - RSS
+params:
+  # The name on the end card. Leave empty and the birthday line is not rendered at all.
+  recipient: ""

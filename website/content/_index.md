@@ -1,6 +1,8 @@
 ---
-title: "A Little Wish — Let Your Wishes Take Flight"
-description: "Take a quiet moment in a hand-painted meadow. Watch a dandelion grow, make a wish, and send it into the wind."
+title: "a quiet moment"
+description: "Open it somewhere quiet, when you have a minute."
+params:
+  shareTitle: "something small, for you"
 outputs:
   - HTML
 ---

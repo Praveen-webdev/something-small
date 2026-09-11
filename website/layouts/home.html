@@ -9,32 +9,33 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'{{ if hugo.IsDevelopment }} ws://localhost:* ws://127.0.0.1:*{{ end }}; object-src 'none'; base-uri 'self'; form-action 'none'">
     <title>{{ .Title }}</title>
     <link rel="canonical" href="{{ .Permalink }}">
-    {{ $favicon := resources.FromString "favicon.svg" (partial "seed.html" .) }}
+    {{ $favicon := resources.FromString "favicon.svg" (partial "favicon.html" .) }}
     <link rel="icon" href="{{ $favicon.RelPermalink }}" type="image/svg+xml">
+    {{ $share := .Params.shareTitle | default .Title }}
     <meta property="og:type" content="website">
-    <meta property="og:title" content="{{ .Title }}">
+    <meta property="og:title" content="{{ $share }}">
     <meta property="og:description" content="{{ .Description }}">
     <meta property="og:url" content="{{ .Permalink }}">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="{{ .Title }}">
+    <meta name="twitter:title" content="{{ $share }}">
     <meta name="twitter:description" content="{{ .Description }}">
     {{ $style := resources.Get "style.css" | minify | fingerprint }}
     <link rel="stylesheet" href="{{ $style.RelPermalink }}" integrity="{{ $style.Data.Integrity }}">
     {{ $script := resources.Get "main.js" | js.Build (dict "target" "es2019" "minify" true) | fingerprint }}
     <script src="{{ $script.RelPermalink }}" integrity="{{ $script.Data.Integrity }}" defer></script>
+    <noscript><style>.threshold { display: none; } body.held { overflow: auto; } #story-title, .description, .scene-controls, .chapter-nav { opacity: 1 !important; }</style></noscript>
   </head>
-  <body>
+  <body class="held">
     <main class="journey" id="journey">
       <div class="viewport" id="viewport" data-phase="intro">
         <canvas class="meadow" id="meadow" aria-hidden="true"></canvas>
         <div class="paper-grain" aria-hidden="true"></div>
         <header class="site-header">
-          <a class="brand" href="{{ .RelPermalink }}">{{ partial "seed.html" . }}<span>{{ T "brand" }}</span></a>
-          <span class="quiet-moment"><span class="sun-mark" aria-hidden="true"></span>{{ T "quietMoment" }}</span>
-          <button class="wish-shortcut" id="wish-shortcut" type="button">{{ T "skipToWish" }}<span class="diagonal-arrow" aria-hidden="true"></span></button>
+          <span class="brand" id="brand" hidden>{{ partial "seed.html" . }}<span>{{ T "brand" }}</span></span>
+          <button class="sound-toggle" id="sound-toggle" type="button" hidden aria-pressed="true" aria-label="{{ T "soundToggle" }}" title="{{ T "soundToggle" }}"><span class="sound-mark" aria-hidden="true"></span></button>
         </header>
         <div class="story-copy" id="story-copy">
-          <p class="eyebrow" id="eyebrow">{{ T "introEyebrow" }}</p>
+          <p class="eyebrow" id="eyebrow" hidden></p>
           <h1 id="story-title"><span id="title-line">{{ T "introTitle" }}</span><em id="title-accent">{{ T "introAccent" }}</em></h1>
           <p class="description" id="description">{{ T "introDescription" }}</p>
           <div class="wish-field" id="wish-field" hidden>
@@ -42,8 +43,13 @@
             <input id="wish-input" type="text" maxlength="240" autocomplete="off" placeholder="{{ T "wishPlaceholder" }}" aria-describedby="wish-privacy">
             <p id="wish-privacy">{{ T "wishPrivacy" }}</p>
           </div>
+          <p class="heart-note" id="heart-note" hidden>{{ T "heartNote" }}</p>
+          <div class="finale" id="finale" hidden>
+            <span class="signature" id="signature" hidden>{{ partial "seed.html" . }}<span>{{ T "brand" }}</span></span>
+            {{ with site.Params.recipient }}<p class="birthday-line" id="birthday-line" hidden>{{ T "birthdayGreeting" (dict "name" .) }}</p>{{ end }}
+          </div>
         </div>
-        <span class="meadow-label">{{ T "meadowLabel" }}</span>
+        <p class="wish-echo" id="wish-echo" aria-hidden="true" hidden></p>
         <nav class="chapter-nav" aria-label="{{ T "chapterNavigation" }}">
           {{ range $index, $key := slice "chapterIntro" "chapterSprout" "chapterBloom" "chapterChange" "chapterWish" }}
             <button class="chapter-dot" type="button" data-chapter="{{ $index }}" aria-label="{{ T $key }}" title="{{ T $key }}"{{ if eq $index 0 }} aria-current="step"{{ end }}><span></span></button>
@@ -56,7 +62,7 @@
             <button class="scroll-prompt" id="scroll-prompt" type="button" aria-label="{{ T "continueJourney" }}"><span id="scroll-label">{{ T "scrollHint" }}</span><span class="scroll-stem" aria-hidden="true"></span></button>
           </div>
           <div class="wish-controls" id="wish-controls" hidden>
-            <button class="primary-button" id="microphone-button" type="button"><span class="breath-mark" aria-hidden="true"></span><span>{{ T "useMicrophone" }}</span></button>
+            <button class="primary-button" id="microphone-button" type="button"><span class="breath-mark" aria-hidden="true"></span><span id="microphone-label">{{ T "useMicrophone" }}</span></button>
             <button class="text-button" id="tap-button" type="button">{{ T "useTap" }}</button>
             <p class="control-note" id="microphone-note">{{ T "microphonePrivacy" }}</p>
           </div>
@@ -70,15 +76,26 @@
           </div>
           <button class="text-button cancel-button" id="cancel-button" type="button" hidden>{{ T "cancel" }}</button>
         </div>
-        <footer class="site-footer"><span>{{ T "footer" }}</span><span class="chapter-count" id="chapter-count">01 <span>/</span> 05</span></footer>
         <noscript><p class="fallback-note">{{ T "noScript" }}</p></noscript>
       </div>
     </main>
+    <div class="threshold" id="threshold">
+      <div class="threshold-card">
+        <p class="threshold-title">{{ T "thresholdTitle" }}</p>
+        <p class="threshold-note">{{ T "thresholdNote" }}</p>
+        <ul class="threshold-options">
+          <li><label class="tick"><input type="checkbox" id="option-noisy"><span class="tick-mark" aria-hidden="true"></span><span>{{ T "optionNoisy" }}</span></label></li>
+          <li><label class="tick"><input type="checkbox" id="option-private"><span class="tick-mark" aria-hidden="true"></span><span>{{ T "optionPrivate" }}</span></label></li>
+        </ul>
+        <button class="primary-button" id="begin-button" type="button">{{ T "begin" }}</button>
+        <p class="threshold-hint">{{ T "thresholdHint" }}</p>
+      </div>
+    </div>
     <div id="translations" hidden>
       {{ range slice "intro" "sprout" "bloom" "change" "wish" "countdown" "listening" "flight" "end" }}
-        <div data-scene="{{ . }}" data-eyebrow="{{ T (printf "%sEyebrow" .) }}" data-title="{{ T (printf "%sTitle" .) }}" data-accent="{{ T (printf "%sAccent" .) }}" data-description="{{ T (printf "%sDescription" .) }}"></div>
+        <div data-scene="{{ . }}" data-eyebrow="{{ if ne . "intro" }}{{ T (printf "%sEyebrow" .) }}{{ end }}" data-title="{{ T (printf "%sTitle" .) }}" data-accent="{{ T (printf "%sAccent" .) }}" data-description="{{ T (printf "%sDescription" .) }}"></div>
       {{ end }}
-      {{ range slice "scrollHint" "keepGrowing" "requestingMicrophone" "microphonePrivacy" "microphoneDenied" "microphoneUnavailable" "microphoneInterrupted" "tapDescription" "listeningNote" "listeningTimeout" "canvasFallback" }}
+      {{ range slice "scrollHint" "keepGrowing" "requestingMicrophone" "microphonePrivacy" "microphoneDenied" "microphoneUnavailable" "microphoneInterrupted" "tapDescription" "listeningNote" "listeningTimeout" "canvasFallback" "useTapPrimary" "useMicrophoneSecondary" "revealedTitle" }}
         <span data-message="{{ . }}">{{ T . }}</span>
       {{ end }}
     </div>
