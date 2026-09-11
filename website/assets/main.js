@@ -9,11 +9,12 @@ const elements = Object.fromEntries([
   'tap-button', 'microphone-note', 'blow-controls', 'blow-button', 'blow-note', 'countdown',
   'cancel-button', 'end-controls', 'replay-spot', 'wish-echo', 'finale', 'signature',
   'birthday-line', 'brand', 'threshold', 'begin-button', 'option-noisy', 'option-private',
-  'sound-toggle', 'confirm', 'confirm-list', 'confirm-continue', 'confirm-back',
+  'sound-toggle', 'confirm', 'confirm-list', 'confirm-continue', 'confirm-back', 'veil',
 ].map((id) => [id.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()), document.getElementById(id)]));
 const scenes = Object.fromEntries([...document.querySelectorAll('[data-scene]')].map((element) => [element.dataset.scene, element.dataset]));
 const messages = Object.fromEntries([...document.querySelectorAll('[data-message]')].map((element) => [element.dataset.message, element.textContent]));
 const chapterButtons = [...document.querySelectorAll('[data-chapter]')];
+const sceneControls = document.querySelector('.scene-controls');
 const chapterPositions = [0, 0.16, 0.42, 0.66, 0.9];
 const chapterScenes = ['intro', 'sprout', 'bloom', 'change', 'wish'];
 // Scroll is remapped onto growth so every chapter gets comparable dwell time while the
@@ -43,6 +44,7 @@ let revealed = false;
 let echoAnimation = null;
 let spotTimer = 0;
 let swellFrame = 0;
+let replaying = false;
 
 const toGrowth = (amount) => {
   for (let index = 1; index < growthAnchors.length; index += 1) {
@@ -369,7 +371,7 @@ const useTap = () => {
   beginCountdown();
 };
 
-const replay = () => {
+const resetJourney = () => {
   clearTimeout(timer);
   clearTimeout(spotTimer);
   cancelAnimationFrame(swellFrame);
@@ -383,9 +385,49 @@ const replay = () => {
   elements.wishInput.value = '';
   elements.microphoneNote.textContent = messages.microphonePrivacy;
   sound?.setFlight(0);
+  meadow?.setState({ growth: 0, flight: 0, breath: 0 });
   goToChapter(0, true);
   updateGrowth();
-  elements.scrollPrompt.focus({ preventScroll: true });
+};
+
+// Replay is a loop, not a restart: the camera falls into the seed that just landed,
+// the meadow is rebuilt behind the veil while nothing can be seen, and it lifts back
+// out of a fresh one. The cut happens at full white, so there is no frame to jar on.
+const replay = () => {
+  if (replaying) return;
+  replaying = true;
+  const point = meadow?.landing();
+  if (point) elements.meadow.style.transformOrigin = `${point.x}px ${point.y}px`;
+
+  const settle = () => {
+    elements.meadow.style.transformOrigin = '';
+    replaying = false;
+    elements.scrollPrompt.focus({ preventScroll: true });
+  };
+
+  if (reducedMotion.matches) {
+    resetJourney();
+    elements.veil.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 320 }).finished.then(settle, settle);
+    return;
+  }
+
+  const fading = [elements.storyCopy, sceneControls, elements.replaySpot].filter(Boolean);
+  fading.forEach((element) => element.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 620, easing: 'ease-in', fill: 'forwards' }));
+  const veiling = elements.veil.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1150, easing: 'ease-in', fill: 'forwards' });
+  const dive = elements.meadow.animate([{ scale: '1' }, { scale: '3.4' }], { duration: 1150, easing: 'cubic-bezier(.5,0,.85,.35)', fill: 'forwards' });
+  sound?.gust(0.45);
+
+  dive.finished.then(() => {
+    fading.forEach((element) => element.getAnimations().forEach((animation) => animation.cancel()));
+    dive.cancel();
+    resetJourney();
+    // settle must hang off the longest animation: clearing transform-origin early would
+    // snap the camera to centre while the meadow is still lifting.
+    const emerge = elements.meadow.animate([{ scale: '1.14' }, { scale: '1' }], { duration: 1500, easing: 'cubic-bezier(.16,.8,.3,1)' });
+    veiling.cancel();
+    elements.veil.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 1250, easing: 'ease-out' });
+    emerge.finished.then(settle, settle);
+  }, settle);
 };
 
 const setMuted = (value) => {

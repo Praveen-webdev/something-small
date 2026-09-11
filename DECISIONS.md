@@ -39,9 +39,8 @@ tapped straight through, and no one should be able to accidentally opt out of th
 version of a gift.
 
 Tapping `begin` with either box unticked opens one gentle dialogue — "Just checking." —
-naming them back and offering "Continue anyway" / "Let me tick them". Its copy speaks
-about her room, not about the site: "Nothing is stopping you. It is only nicer when it is
-just you." It must never claim a consequence, because there isn't one.
+naming them back and offering "Continue anyway" / "Let me tick them". It must never claim
+a consequence, because there isn't one.
 
 Rules: **`begin` is never blocked.** Both boxes are reset by JS on every load, since
 browsers restore form state across a soft reload and the site must always start fresh.

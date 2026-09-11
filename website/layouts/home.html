@@ -30,6 +30,7 @@
       <div class="viewport" id="viewport" data-phase="intro">
         <canvas class="meadow" id="meadow" aria-hidden="true"></canvas>
         <div class="paper-grain" aria-hidden="true"></div>
+        <div class="veil" id="veil" aria-hidden="true"></div>
         <header class="site-header">
           <span class="brand" id="brand" hidden>{{ partial "seed.html" . }}<span>{{ T "brand" }}</span></span>
           <button class="sound-toggle" id="sound-toggle" type="button" hidden aria-pressed="true" aria-label="{{ T "soundToggle" }}" title="{{ T "soundToggle" }}">{{ partial "sound-mark.html" . }}</button>
@@ -93,7 +94,6 @@
           <p class="confirm-title" id="confirm-title">{{ T "confirmTitle" }}</p>
           <p class="confirm-lead">{{ T "confirmLead" }}</p>
           <ul class="confirm-list" id="confirm-list"></ul>
-          <p class="confirm-note">{{ T "confirmNote" }}</p>
           <button class="primary-button" id="confirm-continue" type="button">{{ T "confirmContinue" }}</button>
           <button class="text-button" id="confirm-back" type="button">{{ T "confirmBack" }}</button>
         </div>

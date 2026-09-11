@@ -148,8 +148,6 @@ confirmTitle:
   other: "Just checking."
 confirmLead:
   other: "You’ve left these unticked:"
-confirmNote:
-  other: "Nothing is stopping you. It is only nicer when it is just you."
 confirmContinue:
   other: "Continue anyway"
 confirmBack:
