@@ -139,27 +139,24 @@ the number does not drift with the breeze — and the countdown is pinned to it 
 phase begins and again on resize.
 
 ## 8f. A pond with lotuses
-Placed in the near foreground and cropped by the left edge, so it frames the scene
-instead of floating in it. An earlier version sat small at 20%/71.5% — neither middle
-distance nor foreground, a puddle whose size did not match its depth.
+One pond, left of the dandelion at 20% / 71.5%. A foreground version cropped by the
+screen edge was tried and dropped: it crowded the scene and pushed the blooms off-screen.
+A second, distant pond was also tried and dropped — one is enough.
 
-The lotus is built in three dimensions, not drawn flat. Petals sit on a cone about a
-vertical axis; `cos(azimuth)` is depth, and the petals are sorted on it so the ones
-behind the core are painted first and the ones in front last. That painter's ordering is
-what makes it read as a cup rather than a pinwheel. Each petal is a two-curve pointed
-shape, shaded by how far it turns toward the sun that `paintBackground` puts upper right,
-across three whorls of decreasing reach and increasing rise. The gold receptacle is drawn
-at the depth boundary so the front petals overlap it. Blooms stand on curved stems rather
-than floating, and cast dimmed, wobbling reflections clipped to the water.
+The lotus is flat and upright, not a three-dimensional cup. An earlier build placed petals
+on a cone and depth-sorted them; at 11-18px that produced 28 overlapping shapes that read
+as a cabbage. It is now two fanned rows — five petals behind, three in front — each a
+two-curve point filled with a base-to-tip gradient, over a small gold centre. Fewer,
+cleaner shapes survive the scale.
 
-Lily pads get an under-rim offset beneath the blade for thickness, plus radial veins.
-Pads and blooms are sorted by screen Y before painting, so lower — nearer — draws last.
+Blooms stand on short curved stems, biased down the ellipse so they sit over open water
+rather than on the far bank, and cast dim wobbling reflections clipped to the surface.
+Lily pads have an under-rim for thickness and radial veins. Everything on the surface is
+sorted by screen Y, so nearer paints last.
 
-Positions are biased into the visible right half of the cropped ellipse: with the centre
-near x=0, symmetric offsets would have put a bloom off-screen entirely. They are also
-kept left of where the centred wish button lands, so no bloom hides behind it.
-
-No library. The CSP is `default-src 'self'`, the project carries no dependencies, and
+Drawn per frame rather than into the cached backdrop, because it moves; all motion reads
+`time`, which only advances while `motion` is true, so reduced motion freezes it. No
+library: the CSP is `default-src 'self'`, the project carries no dependencies, and
 `ellipse`/`circle` already did the work.
 
 ## 9. Birthday beat — only at the end

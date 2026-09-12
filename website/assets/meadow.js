@@ -515,82 +515,57 @@ export const createMeadow = (canvas) => {
     }
   };
 
-  // A pond in the near foreground, cropped by the left edge so it frames the scene
-  // rather than floating in it. Painted live each frame because it moves; every motion
-  // term rides `time`, which only advances while `state.motion` is true, so reduced
-  // motion freezes the whole thing without a branch.
+  // A small pond off to one side. Painted live each frame rather than baked into the
+  // cached backdrop because it moves; every motion term rides `time`, which only
+  // advances while `state.motion` is true, so reduced motion freezes it with no branch.
   const pondGeometry = () => {
     const landscape = width > height * 1.7 && height < 500;
-    const rx = Math.min(width * (landscape ? .26 : .37), 330);
-    return { cx: width * (landscape ? .05 : .04), cy: height * (landscape ? .82 : .775), rx, ry: rx * .42 };
+    const rx = Math.min(width * (landscape ? .17 : .23), 215);
+    return { cx: width * (landscape ? .13 : .2), cy: height * (landscape ? .78 : .715), rx, ry: rx * .34 };
   };
 
-  // Petals sit on a cone about a vertical axis. cos(azimuth) is depth: negative is
-  // behind the core, positive in front. Sorting on it is the whole trick — it is what
-  // makes the flower read as a cup instead of a pinwheel.
-  const whorls = [
-    { count: 9, reach: 1, rise: .16, base: .2, width: .34, hue: 344, sat: 46, light: 72, range: 15 },
-    { count: 7, reach: .68, rise: .44, base: .16, width: .28, hue: 346, sat: 50, light: 79, range: 12 },
-    { count: 5, reach: .38, rise: .64, base: .12, width: .22, hue: 349, sat: 42, light: 87, range: 8 },
+  // Flat and upright: two rows of petals fanned from a common base, back row then front.
+  // No depth sorting and no cone — at this size a handful of clean shapes reads as a
+  // lotus, where a full whorl of them just reads as a blob.
+  const petalRows = [
+    { angles: [-1.22, -.63, 0, .63, 1.22], length: 1, width: .27, hue: 342, sat: 46, light: 71 },
+    { angles: [-.44, 0, .44], length: .68, width: .23, hue: 346, sat: 40, light: 82 },
   ];
 
-  const drawPetal = (whorl, azimuth, size, squash) => {
-    const reach = whorl.reach * size;
-    const baseReach = whorl.base * size;
-    const across = Math.sin(azimuth);
-    const depth = Math.cos(azimuth);
-    const baseX = across * baseReach;
-    const baseY = -whorl.rise * size + depth * baseReach * squash;
-    const tipX = across * reach;
-    const tipY = -(whorl.rise + .34) * size + depth * reach * squash;
-    const spanX = tipX - baseX;
-    const spanY = tipY - baseY;
-    const length = Math.hypot(spanX, spanY) || 1;
-    const half = whorl.width * size;
-    const normalX = -spanY / length * half;
-    const normalY = spanX / length * half;
-    // Light comes from the upper right, so petals turned that way catch more of it.
-    const lit = .5 + .5 * Math.sin(azimuth + Math.PI * .3);
-    context.fillStyle = `hsl(${whorl.hue} ${whorl.sat}% ${whorl.light + lit * whorl.range}%)`;
+  const drawPetal = (angle, length, width2, hue, sat, light) => {
+    const tipX = Math.sin(angle) * length;
+    const tipY = -Math.cos(angle) * length;
+    const normalX = -tipY / length * width2;
+    const normalY = tipX / length * width2;
+    const petal = context.createLinearGradient(0, 0, tipX, tipY);
+    petal.addColorStop(0, `hsl(${hue} ${sat}% ${light - 9}%)`);
+    petal.addColorStop(1, `hsl(${hue} ${sat - 14}% ${light + 17}%)`);
+    context.fillStyle = petal;
     context.beginPath();
-    context.moveTo(baseX, baseY);
-    context.quadraticCurveTo(baseX + spanX * .45 + normalX, baseY + spanY * .45 + normalY, tipX, tipY);
-    context.quadraticCurveTo(baseX + spanX * .45 - normalX, baseY + spanY * .45 - normalY, baseX, baseY);
+    context.moveTo(0, 0);
+    context.bezierCurveTo(tipX * .2 + normalX * .7, tipY * .2 + normalY * .7, tipX * .68 + normalX, tipY * .68 + normalY, tipX, tipY);
+    context.bezierCurveTo(tipX * .68 - normalX, tipY * .68 - normalY, tipX * .2 - normalX * .7, tipY * .2 - normalY * .7, 0, 0);
     context.fill();
-    context.strokeStyle = `hsla(${whorl.hue} ${whorl.sat}% ${whorl.light - 22}% / .3)`;
-    context.lineWidth = size * .035;
+    context.strokeStyle = `hsla(${hue} ${sat}% ${light - 26}% / .26)`;
+    context.lineWidth = .5;
     context.stroke();
   };
 
-  const drawLotus = (x, y, size, sway) => {
-    const squash = .44;
-    const petals = [];
-    whorls.forEach((whorl, index) => {
-      for (let step = 0; step < whorl.count; step += 1) {
-        const azimuth = step / whorl.count * Math.PI * 2 + index * .74 + sway;
-        petals.push({ whorl, azimuth, depth: Math.cos(azimuth) - index * .01 });
-      }
-    });
-    petals.sort((a, b) => a.depth - b.depth);
+  const drawLotus = (x, y, size, tilt) => {
     context.save();
     context.translate(x, y);
-    context.rotate(sway * .3);
-    let coreDrawn = false;
-    petals.forEach((petal) => {
-      if (!coreDrawn && petal.depth >= 0) {
-        ellipse(context, 0, -size * .74, size * .21, size * .12, '#d8bf68');
-        ellipse(context, 0, -size * .77, size * .17, size * .09, '#e8d489');
-        coreDrawn = true;
-      }
-      drawPetal(petal.whorl, petal.azimuth, size, squash);
+    context.rotate(tilt);
+    context.scale(size, size);
+    petalRows.forEach((row, index) => {
+      row.angles.forEach((angle) => drawPetal(angle, row.length, row.width, row.hue, row.sat, row.light));
+      if (!index) ellipse(context, 0, -.12, .17, .1, '#dcc270');
     });
-    if (!coreDrawn) ellipse(context, 0, -size * .74, size * .21, size * .12, '#d8bf68');
     context.restore();
   };
 
   const drawStem = (x, y, height2, lean) => {
     context.strokeStyle = '#5d8250';
-    context.lineWidth = Math.max(1, height2 * .055);
+    context.lineWidth = Math.max(1, height2 * .07);
     context.lineCap = 'round';
     context.beginPath();
     context.moveTo(x, y);
@@ -605,15 +580,15 @@ export const createMeadow = (canvas) => {
     context.beginPath();
     context.arc(0, 0, radius, notch + .42, notch + Math.PI * 2 - .42);
     context.closePath();
-    context.fillStyle = `hsl(${hue} 26% 40%)`;
+    context.fillStyle = `hsl(${hue} 30% 34%)`;
     context.fill();
     context.translate(0, -radius * .1);
     context.beginPath();
     context.arc(0, 0, radius, notch + .42, notch + Math.PI * 2 - .42);
     context.closePath();
-    context.fillStyle = `hsl(${hue} 30% 48%)`;
+    context.fillStyle = `hsl(${hue} 36% 52%)`;
     context.fill();
-    context.strokeStyle = `hsla(${hue} 32% 26% / .32)`;
+    context.strokeStyle = `hsla(${hue} 34% 24% / .4)`;
     context.lineWidth = Math.max(.6, radius * .05);
     for (let index = 0; index < 7; index += 1) {
       const angle = notch + .6 + index / 7 * (Math.PI * 2 - 1.2);
@@ -625,14 +600,14 @@ export const createMeadow = (canvas) => {
     context.restore();
   };
 
-  const pads = [[-.04, .14, 17, .4, 104], [.44, .5, 15, 2.2, 96], [.86, -.14, 12, 4.1, 110], [.22, .58, 13, 1.1, 92], [.62, -.32, 11, 5.2, 100]];
-  const blooms = [[.2, .06, 15, 1.35], [.6, .32, 12, 1.15], [.4, -.24, 9, .9]];
+  const pads = [[-.62, .1, 17, .4, 104], [.26, .46, 15, 2.2, 96], [.58, -.16, 12, 4.1, 110], [-.2, .56, 13, 1.1, 92], [-.04, -.3, 11, 5.2, 100]];
+  const blooms = [[-.34, .22, 18, 1.35], [.42, .45, 14, 1.15], [.06, .08, 11, .9]];
 
   const drawPond = () => {
     const { cx, cy, rx, ry } = pondGeometry();
-    const unit = rx / 130;
+    const unit = rx / 90;
 
-    ellipse(context, cx, cy + ry * .06, rx + 8 * unit, ry + 6 * unit, '#86a37c85');
+    ellipse(context, cx, cy + ry * .06, rx + 6 * unit, ry + 5 * unit, '#7f9c74a8');
     const water = context.createLinearGradient(cx, cy - ry, cx, cy + ry);
     water.addColorStop(0, '#6f9ca0');
     water.addColorStop(.5, '#84b2aa');
@@ -649,15 +624,13 @@ export const createMeadow = (canvas) => {
     sheen.addColorStop(1, '#fdfbe600');
     ellipse(context, cx, cy, rx, ry, sheen);
 
-    // Reflections first, so the ripples and glints ride over the top of them.
-    blooms.forEach(([offsetX, offsetY, size, lean], index) => {
-      const bloomX = cx + offsetX * rx * .74 + Math.sin(time * .0007 + index * 3.4) * 2.4 * unit;
-      const bloomY = cy + offsetY * ry * .68;
+    // Reflections first, so the ripples and glints ride over them.
+    blooms.forEach(([offsetX, offsetY, size], index) => {
       context.save();
-      context.globalAlpha = .22;
-      context.translate(bloomX + Math.sin(time * .0016 + index) * 2.4 * unit, bloomY);
-      context.scale(1, -.52);
-      drawLotus(0, -size * unit * 2.1, size * unit, Math.sin(time * .0013 + index * 1.9) * .16);
+      context.globalAlpha = .16;
+      context.translate(cx + offsetX * rx * .74 + Math.sin(time * .0016 + index) * 2.2 * unit, cy + offsetY * ry * .68);
+      context.scale(1, -.44);
+      drawLotus(0, -size * unit * 1.3, size * unit, Math.sin(time * .0013 + index * 1.9) * .16);
       context.restore();
     });
 
@@ -666,7 +639,7 @@ export const createMeadow = (canvas) => {
       context.beginPath();
       context.ellipse(cx + (index - 1) * rx * .34, cy + (index % 2 ? .22 : -.26) * ry, progress * rx * .46, progress * ry * .46, 0, 0, Math.PI * 2);
       context.strokeStyle = `rgba(253,251,232,${(1 - progress) * .28})`;
-      context.lineWidth = 1.3 * unit;
+      context.lineWidth = 1.2 * unit;
       context.stroke();
     }
 
@@ -675,10 +648,10 @@ export const createMeadow = (canvas) => {
       const span = rx * Math.sqrt(Math.max(0, 1 - (drift * .84) ** 2)) * .5;
       const glintY = cy + drift * ry * .84;
       context.beginPath();
-      context.moveTo(cx - span + Math.sin(time * .0007 + index) * 5 * unit, glintY);
-      context.lineTo(cx + span + Math.sin(time * .0009 + index) * 5 * unit, glintY);
+      context.moveTo(cx - span + Math.sin(time * .0007 + index) * 4 * unit, glintY);
+      context.lineTo(cx + span + Math.sin(time * .0009 + index) * 4 * unit, glintY);
       context.strokeStyle = `rgba(255,253,238,${.1 + Math.sin(time * .0012 + index) * .06})`;
-      context.lineWidth = 1.1 * unit;
+      context.lineWidth = unit;
       context.stroke();
     }
     context.restore();
@@ -687,9 +660,9 @@ export const createMeadow = (canvas) => {
     const surface = [];
     pads.forEach(([offsetX, offsetY, radius, notch, hue], index) => {
       surface.push({
-        y: cy + offsetY * ry * .7 + Math.sin(time * .0009 + index * 1.7) * 1.6 * unit,
+        y: cy + offsetY * ry * .7 + Math.sin(time * .0009 + index * 1.7) * 1.4 * unit,
         paint: (padY) => drawPad(
-          cx + offsetX * rx * .74 + Math.sin(time * .0006 + index * 2.1) * 2.4 * unit,
+          cx + offsetX * rx * .74 + Math.sin(time * .0006 + index * 2.1) * 2 * unit,
           padY,
           radius * unit,
           notch + Math.sin(time * .0011 + index) * .1,
@@ -698,9 +671,9 @@ export const createMeadow = (canvas) => {
       });
     });
     blooms.forEach(([offsetX, offsetY, size, lean], index) => {
-      const bloomX = cx + offsetX * rx * .74 + Math.sin(time * .0007 + index * 3.4) * 2.4 * unit;
+      const bloomX = cx + offsetX * rx * .74 + Math.sin(time * .0007 + index * 3.4) * 2.2 * unit;
       const sway = Math.sin(time * .0013 + index * 1.9) * .16;
-      const stand = size * unit * 1.5;
+      const stand = size * unit * .9;
       surface.push({
         y: cy + offsetY * ry * .68 + .1,
         paint: (bloomY) => {
