@@ -139,17 +139,28 @@ the number does not drift with the breeze — and the countdown is pinned to it 
 phase begins and again on resize.
 
 ## 8f. A pond with lotuses
-Lower left, clear of the flower at centre, the replay pulse at 83% width and the controls
-along the bottom. Water is a vertical gradient under a clipped sheen placed upper-right to
-agree with the sun in `paintBackground`; three ripple rings expand and fade from fixed
-points, and five glint lines drift across the surface. Five lily pads (an arc with a wedge
-left open) and two lotuses (eight outer petals, six inner, a gold core) bob and tilt on
-sine waves of differing phase.
+Placed in the near foreground and cropped by the left edge, so it frames the scene
+instead of floating in it. An earlier version sat small at 20%/71.5% — neither middle
+distance nor foreground, a puddle whose size did not match its depth.
 
-It is drawn per frame instead of into the cached backdrop, because it moves. All of its
-motion reads `time`, which only advances while `motion` is true, so reduced motion freezes
-the pond with no extra branch. No library: the CSP is `default-src 'self'`, the project
-carries no dependencies, and `ellipse`/`circle`/`randomGenerator` already did the work.
+The lotus is built in three dimensions, not drawn flat. Petals sit on a cone about a
+vertical axis; `cos(azimuth)` is depth, and the petals are sorted on it so the ones
+behind the core are painted first and the ones in front last. That painter's ordering is
+what makes it read as a cup rather than a pinwheel. Each petal is a two-curve pointed
+shape, shaded by how far it turns toward the sun that `paintBackground` puts upper right,
+across three whorls of decreasing reach and increasing rise. The gold receptacle is drawn
+at the depth boundary so the front petals overlap it. Blooms stand on curved stems rather
+than floating, and cast dimmed, wobbling reflections clipped to the water.
+
+Lily pads get an under-rim offset beneath the blade for thickness, plus radial veins.
+Pads and blooms are sorted by screen Y before painting, so lower — nearer — draws last.
+
+Positions are biased into the visible right half of the cropped ellipse: with the centre
+near x=0, symmetric offsets would have put a bloom off-screen entirely. They are also
+kept left of where the centred wish button lands, so no bloom hides behind it.
+
+No library. The CSP is `default-src 'self'`, the project carries no dependencies, and
+`ellipse`/`circle` already did the work.
 
 ## 9. Birthday beat — only at the end
 Everything before the flight stays universal. Sequenced under the signature, plain and

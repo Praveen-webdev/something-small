@@ -515,61 +515,128 @@ export const createMeadow = (canvas) => {
     }
   };
 
-  // A pond off to one side. Painted live each frame rather than baked into the cached
-  // backdrop, because the water and the lotuses have to move. Everything here rides
-  // `time`, which only advances while `state.motion` is true, so reduced motion leaves
-  // the whole thing perfectly still without a single extra branch.
+  // A pond in the near foreground, cropped by the left edge so it frames the scene
+  // rather than floating in it. Painted live each frame because it moves; every motion
+  // term rides `time`, which only advances while `state.motion` is true, so reduced
+  // motion freezes the whole thing without a branch.
   const pondGeometry = () => {
     const landscape = width > height * 1.7 && height < 500;
-    const rx = Math.min(width * (landscape ? .17 : .23), 215);
-    return { cx: width * (landscape ? .13 : .2), cy: height * (landscape ? .78 : .715), rx, ry: rx * .34 };
+    const rx = Math.min(width * (landscape ? .26 : .37), 330);
+    return { cx: width * (landscape ? .05 : .04), cy: height * (landscape ? .82 : .775), rx, ry: rx * .42 };
   };
 
-  const drawPad = (x, y, radius, angle, tone) => {
-    context.save();
-    context.translate(x, y);
-    context.scale(1, .4);
+  // Petals sit on a cone about a vertical axis. cos(azimuth) is depth: negative is
+  // behind the core, positive in front. Sorting on it is the whole trick — it is what
+  // makes the flower read as a cup instead of a pinwheel.
+  const whorls = [
+    { count: 9, reach: 1, rise: .16, base: .2, width: .34, hue: 344, sat: 46, light: 72, range: 15 },
+    { count: 7, reach: .68, rise: .44, base: .16, width: .28, hue: 346, sat: 50, light: 79, range: 12 },
+    { count: 5, reach: .38, rise: .64, base: .12, width: .22, hue: 349, sat: 42, light: 87, range: 8 },
+  ];
+
+  const drawPetal = (whorl, azimuth, size, squash) => {
+    const reach = whorl.reach * size;
+    const baseReach = whorl.base * size;
+    const across = Math.sin(azimuth);
+    const depth = Math.cos(azimuth);
+    const baseX = across * baseReach;
+    const baseY = -whorl.rise * size + depth * baseReach * squash;
+    const tipX = across * reach;
+    const tipY = -(whorl.rise + .34) * size + depth * reach * squash;
+    const spanX = tipX - baseX;
+    const spanY = tipY - baseY;
+    const length = Math.hypot(spanX, spanY) || 1;
+    const half = whorl.width * size;
+    const normalX = -spanY / length * half;
+    const normalY = spanX / length * half;
+    // Light comes from the upper right, so petals turned that way catch more of it.
+    const lit = .5 + .5 * Math.sin(azimuth + Math.PI * .3);
+    context.fillStyle = `hsl(${whorl.hue} ${whorl.sat}% ${whorl.light + lit * whorl.range}%)`;
     context.beginPath();
-    context.arc(0, 0, radius, angle + .4, angle + Math.PI * 2 - .4);
-    context.closePath();
-    context.fillStyle = tone;
+    context.moveTo(baseX, baseY);
+    context.quadraticCurveTo(baseX + spanX * .45 + normalX, baseY + spanY * .45 + normalY, tipX, tipY);
+    context.quadraticCurveTo(baseX + spanX * .45 - normalX, baseY + spanY * .45 - normalY, baseX, baseY);
     context.fill();
-    context.strokeStyle = '#48684033';
-    context.lineWidth = 1.4;
+    context.strokeStyle = `hsla(${whorl.hue} ${whorl.sat}% ${whorl.light - 22}% / .3)`;
+    context.lineWidth = size * .035;
     context.stroke();
-    context.restore();
   };
 
-  const drawLotus = (x, y, size, tilt, petal, inner) => {
+  const drawLotus = (x, y, size, sway) => {
+    const squash = .44;
+    const petals = [];
+    whorls.forEach((whorl, index) => {
+      for (let step = 0; step < whorl.count; step += 1) {
+        const azimuth = step / whorl.count * Math.PI * 2 + index * .74 + sway;
+        petals.push({ whorl, azimuth, depth: Math.cos(azimuth) - index * .01 });
+      }
+    });
+    petals.sort((a, b) => a.depth - b.depth);
     context.save();
     context.translate(x, y);
-    context.scale(1, .52);
-    context.rotate(tilt);
-    for (let index = 0; index < 8; index += 1) {
-      const angle = index / 8 * Math.PI * 2;
-      ellipse(context, Math.cos(angle) * size * .6, Math.sin(angle) * size * .6, size * .46, size * .24, petal, angle);
-    }
-    for (let index = 0; index < 6; index += 1) {
-      const angle = index / 6 * Math.PI * 2 + .45;
-      ellipse(context, Math.cos(angle) * size * .3, Math.sin(angle) * size * .3, size * .32, size * .18, inner, angle);
-    }
-    circle(context, 0, 0, size * .19, '#e3bd63');
+    context.rotate(sway * .3);
+    let coreDrawn = false;
+    petals.forEach((petal) => {
+      if (!coreDrawn && petal.depth >= 0) {
+        ellipse(context, 0, -size * .74, size * .21, size * .12, '#d8bf68');
+        ellipse(context, 0, -size * .77, size * .17, size * .09, '#e8d489');
+        coreDrawn = true;
+      }
+      drawPetal(petal.whorl, petal.azimuth, size, squash);
+    });
+    if (!coreDrawn) ellipse(context, 0, -size * .74, size * .21, size * .12, '#d8bf68');
     context.restore();
   };
 
-  const pads = [[-.54, .1, 15, .4], [.32, .4, 13, 2.2], [.63, -.2, 11, 4.1], [-.16, .52, 10, 1.1], [.02, -.36, 12, 5.2]];
-  const padTones = ['#6f9560', '#7ba569', '#688e5c', '#7fa96c', '#74a063'];
-  const lotuses = [[-.33, -.08, 11, '#f0c3d0', '#fae0e7'], [.45, .22, 9, '#ecbccb', '#f7dbe3']];
+  const drawStem = (x, y, height2, lean) => {
+    context.strokeStyle = '#5d8250';
+    context.lineWidth = Math.max(1, height2 * .055);
+    context.lineCap = 'round';
+    context.beginPath();
+    context.moveTo(x, y);
+    context.quadraticCurveTo(x + lean * height2 * .18, y - height2 * .55, x + lean * height2 * .3, y - height2);
+    context.stroke();
+  };
+
+  const drawPad = (x, y, radius, notch, hue) => {
+    context.save();
+    context.translate(x, y);
+    context.scale(1, .34);
+    context.beginPath();
+    context.arc(0, 0, radius, notch + .42, notch + Math.PI * 2 - .42);
+    context.closePath();
+    context.fillStyle = `hsl(${hue} 26% 40%)`;
+    context.fill();
+    context.translate(0, -radius * .1);
+    context.beginPath();
+    context.arc(0, 0, radius, notch + .42, notch + Math.PI * 2 - .42);
+    context.closePath();
+    context.fillStyle = `hsl(${hue} 30% 48%)`;
+    context.fill();
+    context.strokeStyle = `hsla(${hue} 32% 26% / .32)`;
+    context.lineWidth = Math.max(.6, radius * .05);
+    for (let index = 0; index < 7; index += 1) {
+      const angle = notch + .6 + index / 7 * (Math.PI * 2 - 1.2);
+      context.beginPath();
+      context.moveTo(0, 0);
+      context.lineTo(Math.cos(angle) * radius * .92, Math.sin(angle) * radius * .92);
+      context.stroke();
+    }
+    context.restore();
+  };
+
+  const pads = [[-.04, .14, 17, .4, 104], [.44, .5, 15, 2.2, 96], [.86, -.14, 12, 4.1, 110], [.22, .58, 13, 1.1, 92], [.62, -.32, 11, 5.2, 100]];
+  const blooms = [[.2, .06, 15, 1.35], [.6, .32, 12, 1.15], [.4, -.24, 9, .9]];
 
   const drawPond = () => {
     const { cx, cy, rx, ry } = pondGeometry();
-    const unit = rx / 80;
+    const unit = rx / 130;
 
-    ellipse(context, cx, cy + ry * .07, rx + 7 * unit, ry + 5 * unit, '#86a37c7a');
+    ellipse(context, cx, cy + ry * .06, rx + 8 * unit, ry + 6 * unit, '#86a37c85');
     const water = context.createLinearGradient(cx, cy - ry, cx, cy + ry);
-    water.addColorStop(0, '#79a4a5');
-    water.addColorStop(.5, '#8ab6ac');
-    water.addColorStop(1, '#a5c7b3');
+    water.addColorStop(0, '#6f9ca0');
+    water.addColorStop(.5, '#84b2aa');
+    water.addColorStop(1, '#a3c6b2');
     ellipse(context, cx, cy, rx, ry, water);
 
     context.save();
@@ -577,54 +644,72 @@ export const createMeadow = (canvas) => {
     context.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
     context.clip();
 
-    // The sun sits upper right in paintBackground, so the sheen does too.
-    const sheen = context.createRadialGradient(cx + rx * .34, cy - ry * .5, 0, cx + rx * .34, cy - ry * .5, rx * .95);
-    sheen.addColorStop(0, '#fdfbe64f');
+    const sheen = context.createRadialGradient(cx + rx * .3, cy - ry * .5, 0, cx + rx * .3, cy - ry * .5, rx * .95);
+    sheen.addColorStop(0, '#fdfbe654');
     sheen.addColorStop(1, '#fdfbe600');
     ellipse(context, cx, cy, rx, ry, sheen);
+
+    // Reflections first, so the ripples and glints ride over the top of them.
+    blooms.forEach(([offsetX, offsetY, size, lean], index) => {
+      const bloomX = cx + offsetX * rx * .74 + Math.sin(time * .0007 + index * 3.4) * 2.4 * unit;
+      const bloomY = cy + offsetY * ry * .68;
+      context.save();
+      context.globalAlpha = .22;
+      context.translate(bloomX + Math.sin(time * .0016 + index) * 2.4 * unit, bloomY);
+      context.scale(1, -.52);
+      drawLotus(0, -size * unit * 2.1, size * unit, Math.sin(time * .0013 + index * 1.9) * .16);
+      context.restore();
+    });
 
     for (let index = 0; index < 3; index += 1) {
       const progress = (time * .00021 + index * .37) % 1;
       context.beginPath();
-      context.ellipse(cx + (index - 1) * rx * .36, cy + (index % 2 ? .2 : -.24) * ry, progress * rx * .5, progress * ry * .5, 0, 0, Math.PI * 2);
-      context.strokeStyle = `rgba(253,251,232,${(1 - progress) * .3})`;
-      context.lineWidth = 1.1 * unit;
+      context.ellipse(cx + (index - 1) * rx * .34, cy + (index % 2 ? .22 : -.26) * ry, progress * rx * .46, progress * ry * .46, 0, 0, Math.PI * 2);
+      context.strokeStyle = `rgba(253,251,232,${(1 - progress) * .28})`;
+      context.lineWidth = 1.3 * unit;
       context.stroke();
     }
 
-    for (let index = 0; index < 5; index += 1) {
-      const drift = ((time * .00004 + index / 5) % 1) * 2 - 1;
-      const span = rx * Math.sqrt(Math.max(0, 1 - (drift * .82) ** 2)) * .52;
-      const glintY = cy + drift * ry * .82;
+    for (let index = 0; index < 6; index += 1) {
+      const drift = ((time * .00004 + index / 6) % 1) * 2 - 1;
+      const span = rx * Math.sqrt(Math.max(0, 1 - (drift * .84) ** 2)) * .5;
+      const glintY = cy + drift * ry * .84;
       context.beginPath();
-      context.moveTo(cx - span + Math.sin(time * .0007 + index) * 4 * unit, glintY);
-      context.lineTo(cx + span + Math.sin(time * .0009 + index) * 4 * unit, glintY);
-      context.strokeStyle = `rgba(255,253,238,${.11 + Math.sin(time * .0012 + index) * .06})`;
-      context.lineWidth = .9 * unit;
+      context.moveTo(cx - span + Math.sin(time * .0007 + index) * 5 * unit, glintY);
+      context.lineTo(cx + span + Math.sin(time * .0009 + index) * 5 * unit, glintY);
+      context.strokeStyle = `rgba(255,253,238,${.1 + Math.sin(time * .0012 + index) * .06})`;
+      context.lineWidth = 1.1 * unit;
       context.stroke();
     }
     context.restore();
 
-    pads.forEach(([offsetX, offsetY, radius, notch], index) => {
-      drawPad(
-        cx + offsetX * rx * .78 + Math.sin(time * .0006 + index * 2.1) * 2.2 * unit,
-        cy + offsetY * ry * .72 + Math.sin(time * .0009 + index * 1.7) * 1.5 * unit,
-        radius * unit,
-        notch + Math.sin(time * .0011 + index) * .1,
-        padTones[index],
-      );
+    // Nearer things last: on this plane, lower on screen means closer to the eye.
+    const surface = [];
+    pads.forEach(([offsetX, offsetY, radius, notch, hue], index) => {
+      surface.push({
+        y: cy + offsetY * ry * .7 + Math.sin(time * .0009 + index * 1.7) * 1.6 * unit,
+        paint: (padY) => drawPad(
+          cx + offsetX * rx * .74 + Math.sin(time * .0006 + index * 2.1) * 2.4 * unit,
+          padY,
+          radius * unit,
+          notch + Math.sin(time * .0011 + index) * .1,
+          hue,
+        ),
+      });
     });
-
-    lotuses.forEach(([offsetX, offsetY, size, petal, inner], index) => {
-      drawLotus(
-        cx + offsetX * rx * .78 + Math.sin(time * .0007 + index * 3.4) * 2.6 * unit,
-        cy + offsetY * ry * .72 + Math.sin(time * .001 + index * 2.2) * 1.8 * unit,
-        size * unit,
-        Math.sin(time * .0013 + index * 1.9) * .13,
-        petal,
-        inner,
-      );
+    blooms.forEach(([offsetX, offsetY, size, lean], index) => {
+      const bloomX = cx + offsetX * rx * .74 + Math.sin(time * .0007 + index * 3.4) * 2.4 * unit;
+      const sway = Math.sin(time * .0013 + index * 1.9) * .16;
+      const stand = size * unit * 1.5;
+      surface.push({
+        y: cy + offsetY * ry * .68 + .1,
+        paint: (bloomY) => {
+          drawStem(bloomX, bloomY, stand, lean * .12 + sway * .5);
+          drawLotus(bloomX + (lean * .12 + sway * .5) * stand * .3, bloomY - stand, size * unit, sway);
+        },
+      });
     });
+    surface.sort((a, b) => a.y - b.y).forEach((item) => item.paint(item.y));
   };
 
   const render = (timestamp = 0) => {
