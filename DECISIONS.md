@@ -151,6 +151,9 @@ cleaner shapes survive the scale.
 
 Blooms stand on short curved stems, biased down the ellipse so they sit over open water
 rather than on the far bank, and cast dim wobbling reflections clipped to the surface.
+They are sized for the distance the pond sits at — 16 to 24px across, not 36 — and spread
+across the water rather than stacked in one band, with the nearer ones larger so the
+spacing reads as depth.
 Lily pads have an under-rim for thickness and radial veins. Everything on the surface is
 sorted by screen Y, so nearer paints last.
 
