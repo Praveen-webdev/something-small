@@ -138,6 +138,19 @@ meadow. `meadow.head()` reports the seedhead position in CSS pixels — sway exc
 the number does not drift with the breeze — and the countdown is pinned to it when the
 phase begins and again on resize.
 
+## 8f. A pond with lotuses
+Lower left, clear of the flower at centre, the replay pulse at 83% width and the controls
+along the bottom. Water is a vertical gradient under a clipped sheen placed upper-right to
+agree with the sun in `paintBackground`; three ripple rings expand and fade from fixed
+points, and five glint lines drift across the surface. Five lily pads (an arc with a wedge
+left open) and two lotuses (eight outer petals, six inner, a gold core) bob and tilt on
+sine waves of differing phase.
+
+It is drawn per frame instead of into the cached backdrop, because it moves. All of its
+motion reads `time`, which only advances while `motion` is true, so reduced motion freezes
+the pond with no extra branch. No library: the CSP is `default-src 'self'`, the project
+carries no dependencies, and `ellipse`/`circle`/`randomGenerator` already did the work.
+
 ## 9. Birthday beat — only at the end
 Everything before the flight stays universal. Sequenced under the signature, plain and
 tender: "Happy birthday, <name>." in serif italic, nothing more. The existing

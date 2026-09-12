@@ -6,7 +6,7 @@
 - Test: `bun test website/assets/breath.test.js`.
 - Configuration is `website/data/site.yaml`; always pass `--config data/site.yaml` relative to the Hugo source directory.
 - UI copy belongs in `website/i18n/en.yaml`; title and description belong in `website/content/_index.md`.
-- `website/assets/meadow.js` paints cached scenery and controls botanical stages through `createMeadow(canvas).setState({ growth, flight, motion })`.
+- `website/assets/meadow.js` paints cached scenery and controls botanical stages through `createMeadow(canvas).setState({ growth, flight, motion, breath })`, and exposes `landing()` and `head()` as the canvas positions the DOM pins itself to. The pond and its lotuses are drawn live each frame rather than baked into the cached backdrop, since they move; all their motion rides `time`, which only advances while `motion` is true.
 - `website/assets/main.js` coordinates scroll, countdown, flight and replay. `website/assets/sound.js` synthesises the wind, gust and chime through Web Audio; it fetches nothing. `website/assets/breath.js` handles opt-in, local-only microphone analysis and track cleanup.
 - Microphone access requires HTTPS or localhost. Wishes and audio are not persisted or transmitted. Always retain the tap fallback.
 - Browser automation on this machine needs modern Node first on PATH: `PATH="/opt/homebrew/bin:$PATH" agent-browser ...`. Default Node 16 cannot start its daemon.

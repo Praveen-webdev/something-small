@@ -515,6 +515,118 @@ export const createMeadow = (canvas) => {
     }
   };
 
+  // A pond off to one side. Painted live each frame rather than baked into the cached
+  // backdrop, because the water and the lotuses have to move. Everything here rides
+  // `time`, which only advances while `state.motion` is true, so reduced motion leaves
+  // the whole thing perfectly still without a single extra branch.
+  const pondGeometry = () => {
+    const landscape = width > height * 1.7 && height < 500;
+    const rx = Math.min(width * (landscape ? .17 : .23), 215);
+    return { cx: width * (landscape ? .13 : .2), cy: height * (landscape ? .78 : .715), rx, ry: rx * .34 };
+  };
+
+  const drawPad = (x, y, radius, angle, tone) => {
+    context.save();
+    context.translate(x, y);
+    context.scale(1, .4);
+    context.beginPath();
+    context.arc(0, 0, radius, angle + .4, angle + Math.PI * 2 - .4);
+    context.closePath();
+    context.fillStyle = tone;
+    context.fill();
+    context.strokeStyle = '#48684033';
+    context.lineWidth = 1.4;
+    context.stroke();
+    context.restore();
+  };
+
+  const drawLotus = (x, y, size, tilt, petal, inner) => {
+    context.save();
+    context.translate(x, y);
+    context.scale(1, .52);
+    context.rotate(tilt);
+    for (let index = 0; index < 8; index += 1) {
+      const angle = index / 8 * Math.PI * 2;
+      ellipse(context, Math.cos(angle) * size * .6, Math.sin(angle) * size * .6, size * .46, size * .24, petal, angle);
+    }
+    for (let index = 0; index < 6; index += 1) {
+      const angle = index / 6 * Math.PI * 2 + .45;
+      ellipse(context, Math.cos(angle) * size * .3, Math.sin(angle) * size * .3, size * .32, size * .18, inner, angle);
+    }
+    circle(context, 0, 0, size * .19, '#e3bd63');
+    context.restore();
+  };
+
+  const pads = [[-.54, .1, 15, .4], [.32, .4, 13, 2.2], [.63, -.2, 11, 4.1], [-.16, .52, 10, 1.1], [.02, -.36, 12, 5.2]];
+  const padTones = ['#6f9560', '#7ba569', '#688e5c', '#7fa96c', '#74a063'];
+  const lotuses = [[-.33, -.08, 11, '#f0c3d0', '#fae0e7'], [.45, .22, 9, '#ecbccb', '#f7dbe3']];
+
+  const drawPond = () => {
+    const { cx, cy, rx, ry } = pondGeometry();
+    const unit = rx / 80;
+
+    ellipse(context, cx, cy + ry * .07, rx + 7 * unit, ry + 5 * unit, '#86a37c7a');
+    const water = context.createLinearGradient(cx, cy - ry, cx, cy + ry);
+    water.addColorStop(0, '#79a4a5');
+    water.addColorStop(.5, '#8ab6ac');
+    water.addColorStop(1, '#a5c7b3');
+    ellipse(context, cx, cy, rx, ry, water);
+
+    context.save();
+    context.beginPath();
+    context.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    context.clip();
+
+    // The sun sits upper right in paintBackground, so the sheen does too.
+    const sheen = context.createRadialGradient(cx + rx * .34, cy - ry * .5, 0, cx + rx * .34, cy - ry * .5, rx * .95);
+    sheen.addColorStop(0, '#fdfbe64f');
+    sheen.addColorStop(1, '#fdfbe600');
+    ellipse(context, cx, cy, rx, ry, sheen);
+
+    for (let index = 0; index < 3; index += 1) {
+      const progress = (time * .00021 + index * .37) % 1;
+      context.beginPath();
+      context.ellipse(cx + (index - 1) * rx * .36, cy + (index % 2 ? .2 : -.24) * ry, progress * rx * .5, progress * ry * .5, 0, 0, Math.PI * 2);
+      context.strokeStyle = `rgba(253,251,232,${(1 - progress) * .3})`;
+      context.lineWidth = 1.1 * unit;
+      context.stroke();
+    }
+
+    for (let index = 0; index < 5; index += 1) {
+      const drift = ((time * .00004 + index / 5) % 1) * 2 - 1;
+      const span = rx * Math.sqrt(Math.max(0, 1 - (drift * .82) ** 2)) * .52;
+      const glintY = cy + drift * ry * .82;
+      context.beginPath();
+      context.moveTo(cx - span + Math.sin(time * .0007 + index) * 4 * unit, glintY);
+      context.lineTo(cx + span + Math.sin(time * .0009 + index) * 4 * unit, glintY);
+      context.strokeStyle = `rgba(255,253,238,${.11 + Math.sin(time * .0012 + index) * .06})`;
+      context.lineWidth = .9 * unit;
+      context.stroke();
+    }
+    context.restore();
+
+    pads.forEach(([offsetX, offsetY, radius, notch], index) => {
+      drawPad(
+        cx + offsetX * rx * .78 + Math.sin(time * .0006 + index * 2.1) * 2.2 * unit,
+        cy + offsetY * ry * .72 + Math.sin(time * .0009 + index * 1.7) * 1.5 * unit,
+        radius * unit,
+        notch + Math.sin(time * .0011 + index) * .1,
+        padTones[index],
+      );
+    });
+
+    lotuses.forEach(([offsetX, offsetY, size, petal, inner], index) => {
+      drawLotus(
+        cx + offsetX * rx * .78 + Math.sin(time * .0007 + index * 3.4) * 2.6 * unit,
+        cy + offsetY * ry * .72 + Math.sin(time * .001 + index * 2.2) * 1.8 * unit,
+        size * unit,
+        Math.sin(time * .0013 + index * 1.9) * .13,
+        petal,
+        inner,
+      );
+    });
+  };
+
   const render = (timestamp = 0) => {
     frame = 0;
     if (destroyed || document.hidden) return;
@@ -524,6 +636,7 @@ export const createMeadow = (canvas) => {
       context.setTransform(1, 0, 0, 1, 0, 0);
       context.drawImage(background, 0, 0);
       context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      drawPond();
       drawFlower();
       const random = randomGenerator(875);
       for (let index = 0; index < 17; index += 1) {
