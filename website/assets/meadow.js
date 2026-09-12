@@ -27,6 +27,9 @@ export const createMeadow = (canvas) => {
   const seedContext = seedSprite.getContext('2d');
   if (!backdrop || !puffContext || !blossomContext || !seedContext) return null;
   const state = { growth: 0, flight: 0, motion: true, breath: 0 };
+  const pointer = { x: 0, y: 0, active: false, pressed: false, trailX: 0, trailY: 0 };
+  const ripples = [];
+  let spots = null;
 
   // Where the seedhead sits, in CSS pixels. Sway is deliberately excluded so anything
   // pinned here does not drift with the breeze.
@@ -404,7 +407,8 @@ export const createMeadow = (canvas) => {
     const sway = state.motion ? Math.sin(time * .0008) * 3 + Math.sin(time * .0013) : 0;
     const breath = state.breath;
     const tremble = breath && state.motion ? (Math.sin(time * .022) * 2.4 + Math.sin(time * .039) * 1.2) * breath : 0;
-    const headX = sway + stemGrowth * 7 + breath * 10 + tremble;
+    const bend = stemNode.x / scale;
+    const headX = sway + stemGrowth * 7 + breath * 10 + tremble + bend;
     const headY = -stemHeight;
     context.save();
     context.translate(baseX, baseY);
@@ -423,13 +427,13 @@ export const createMeadow = (canvas) => {
         context.lineWidth = 6.5;
         context.beginPath();
         context.moveTo(0, 0);
-        context.bezierCurveTo(-9, -stemHeight * .35, 15 + sway, -stemHeight * .66, headX, headY + 6);
+        context.bezierCurveTo(-9 + bend * .12, -stemHeight * .35, 15 + sway + bend * .5, -stemHeight * .66, headX, headY + 6);
         context.stroke();
         context.strokeStyle = '#b1bd7794';
         context.lineWidth = 2;
         context.beginPath();
         context.moveTo(-1.5, 0);
-        context.bezierCurveTo(-10.5, -stemHeight * .35, 13.5 + sway, -stemHeight * .66, headX - 1.5, headY + 6);
+        context.bezierCurveTo(-10.5 + bend * .12, -stemHeight * .35, 13.5 + sway + bend * .5, -stemHeight * .66, headX - 1.5, headY + 6);
         context.stroke();
         context.save();
         context.translate(headX, headY);
@@ -603,9 +607,116 @@ export const createMeadow = (canvas) => {
   const pads = [[-.62, .1, 17, .4, 104], [.26, .46, 15, 2.2, 96], [.58, -.16, 12, 4.1, 110], [-.2, .56, 13, 1.1, 92], [-.04, -.3, 11, 5.2, 100]];
   const blooms = [[.18, -.05, 8, .9], [-.55, .3, 12, 1.35], [.6, .48, 10, 1.15]];
 
-  const drawPond = () => {
+  // Touch is an influence field, not a drag: things are pushed away from the pointer and
+  // spring back when it leaves. Nothing calls preventDefault, so the scroll that drives
+  // the whole journey is untouched, and dragging past the pond nudges it on the way.
+  const padNodes = pads.map(() => ({ x: 0, y: 0, vx: 0, vy: 0 }));
+  const bloomNodes = blooms.map(() => ({ x: 0, y: 0, vx: 0, vy: 0 }));
+  const stemNode = { x: 0, y: 0, vx: 0, vy: 0 };
+
+  const spring = (node, forceX, forceY, step, stiffness, damping, limit) => {
+    node.vx += (forceX - node.x * stiffness - node.vx * damping) * step;
+    node.vy += (forceY - node.y * stiffness - node.vy * damping) * step;
+    node.x += node.vx * step;
+    node.y += node.vy * step;
+    if (Math.abs(node.x) > limit) {
+      node.x = Math.sign(node.x) * limit;
+      node.vx *= .2;
+    }
+    if (Math.abs(node.y) > limit) {
+      node.y = Math.sign(node.y) * limit;
+      node.vy *= .2;
+    }
+  };
+
+  const pushFrom = (x, y, radius, strength) => {
+    if (!pointer.active) return [0, 0];
+    const awayX = x - pointer.x;
+    const awayY = y - pointer.y;
+    const distance = Math.hypot(awayX, awayY);
+    if (distance > radius) return [0, 0];
+    const falloff = (1 - distance / radius) ** 2;
+    const power = strength * falloff * (pointer.pressed ? 1.7 : 1) / Math.max(distance, 7);
+    return [awayX * power, awayY * power];
+  };
+
+  const inWater = (x, y) => {
+    const { cx, cy, rx, ry } = pondGeometry();
+    return ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1;
+  };
+
+  const addRipple = (x, y) => {
+    if (!state.motion || !inWater(x, y)) return;
+    ripples.push({ x, y, born: time });
+    if (ripples.length > 6) ripples.shift();
+  };
+
+  // Rest positions, wind included. Shared by the physics and the painting so the two can
+  // never disagree about where anything is.
+  const surfaceSpots = () => {
     const { cx, cy, rx, ry } = pondGeometry();
     const unit = rx / 90;
+    return {
+      cx, cy, rx, ry, unit,
+      pads: pads.map(([offsetX, offsetY, radius, notch, hue], index) => ({
+        x: cx + offsetX * rx * .74 + Math.sin(time * .0006 + index * 2.1) * 2 * unit,
+        y: cy + offsetY * ry * .7 + Math.sin(time * .0009 + index * 1.7) * 1.4 * unit,
+        radius: radius * unit,
+        notch: notch + Math.sin(time * .0011 + index) * .1,
+        hue,
+      })),
+      blooms: blooms.map(([offsetX, offsetY, size, lean], index) => ({
+        x: cx + offsetX * rx * .74 + Math.sin(time * .0007 + index * 3.4) * 2.2 * unit,
+        y: cy + offsetY * ry * .68,
+        size: size * unit,
+        sway: Math.sin(time * .0013 + index * 1.9) * .16,
+        lean,
+      })),
+    };
+  };
+
+  const stepPhysics = (delta) => {
+    spots = surfaceSpots();
+    // Clamp the step so a long stall (a background tab, a slow frame) cannot fling the
+    // springs past their rest position when the page comes back.
+    const step = Math.min(2.2, delta / 16.67);
+    if (!state.motion) {
+      [...padNodes, ...bloomNodes, stemNode].forEach((node) => { node.x = 0; node.y = 0; node.vx = 0; node.vy = 0; });
+      return;
+    }
+    spots.pads.forEach((pad, index) => {
+      const [forceX, forceY] = pushFrom(pad.x, pad.y, pad.radius + 52, .8);
+      spring(padNodes[index], forceX, forceY * .45, step, .062, .3, 15);
+    });
+    spots.blooms.forEach((bloom, index) => {
+      const [forceX, forceY] = pushFrom(bloom.x, bloom.y - bloom.size * .9, bloom.size + 56, .7);
+      spring(bloomNodes[index], forceX, forceY * .3, step, .05, .28, 17);
+    });
+
+    let stemForce = 0;
+    const scale = height / 800 * (width < 600 ? .92 : 1);
+    const landscape = width > height * 1.7 && height < 500;
+    const baseX = width * (landscape ? .72 : .5);
+    const baseY = height * .88;
+    const stemHeight = (landscape ? 350 : 238) * ease((state.growth - .035) / .28) * scale;
+    if (pointer.active && stemHeight > 8) {
+      const topY = baseY - stemHeight;
+      const alongY = Math.max(topY, Math.min(baseY, pointer.y));
+      const awayX = baseX - pointer.x;
+      const distance = Math.hypot(awayX, alongY - pointer.y);
+      const radius = 96;
+      if (distance < radius) {
+        // A stem bends most where it is furthest from the root.
+        const leverage = 1 - (alongY - topY) / stemHeight;
+        const falloff = (1 - distance / radius) ** 2;
+        stemForce = awayX / Math.max(distance, 8) * 1.7 * falloff * leverage * (pointer.pressed ? 1.7 : 1);
+      }
+    }
+    spring(stemNode, stemForce, 0, step, .046, .26, 24);
+  };
+
+  const drawPond = () => {
+    const { cx, cy, rx, ry, unit } = spots || surfaceSpots();
 
     ellipse(context, cx, cy + ry * .06, rx + 6 * unit, ry + 5 * unit, '#7f9c74a8');
     const water = context.createLinearGradient(cx, cy - ry, cx, cy + ry);
@@ -625,14 +736,30 @@ export const createMeadow = (canvas) => {
     ellipse(context, cx, cy, rx, ry, sheen);
 
     // Reflections first, so the ripples and glints ride over them.
-    blooms.forEach(([offsetX, offsetY, size], index) => {
+    spots.blooms.forEach((bloom, index) => {
+      const node = bloomNodes[index];
       context.save();
       context.globalAlpha = .16;
-      context.translate(cx + offsetX * rx * .74 + Math.sin(time * .0016 + index) * 2.2 * unit, cy + offsetY * ry * .68);
+      context.translate(bloom.x + node.x * .6 + Math.sin(time * .0016 + index) * 2.2 * unit, bloom.y + node.y * .6);
       context.scale(1, -.44);
-      drawLotus(0, -size * unit * 1.3, size * unit, Math.sin(time * .0013 + index * 1.9) * .16);
+      drawLotus(0, -bloom.size * 1.3, bloom.size, bloom.sway + node.x * .012);
       context.restore();
     });
+
+    // Rings from wherever a finger has touched the water.
+    for (let index = ripples.length - 1; index >= 0; index -= 1) {
+      const age = (time - ripples[index].born) / 1800;
+      if (age >= 1 || age < 0) {
+        ripples.splice(index, 1);
+        continue;
+      }
+      const spread = ease(age);
+      context.beginPath();
+      context.ellipse(ripples[index].x, ripples[index].y, spread * rx * .52, spread * ry * .52, 0, 0, Math.PI * 2);
+      context.strokeStyle = `rgba(255,253,238,${(1 - age) ** 2 * .5})`;
+      context.lineWidth = (1 - age * .6) * 1.6 * unit;
+      context.stroke();
+    }
 
     for (let index = 0; index < 3; index += 1) {
       const progress = (time * .00021 + index * .37) % 1;
@@ -658,27 +785,24 @@ export const createMeadow = (canvas) => {
 
     // Nearer things last: on this plane, lower on screen means closer to the eye.
     const surface = [];
-    pads.forEach(([offsetX, offsetY, radius, notch, hue], index) => {
+    spots.pads.forEach((pad, index) => {
+      const node = padNodes[index];
       surface.push({
-        y: cy + offsetY * ry * .7 + Math.sin(time * .0009 + index * 1.7) * 1.4 * unit,
-        paint: (padY) => drawPad(
-          cx + offsetX * rx * .74 + Math.sin(time * .0006 + index * 2.1) * 2 * unit,
-          padY,
-          radius * unit,
-          notch + Math.sin(time * .0011 + index) * .1,
-          hue,
-        ),
+        y: pad.y + node.y,
+        paint: (padY) => drawPad(pad.x + node.x, padY, pad.radius, pad.notch + node.x * .006, pad.hue),
       });
     });
-    blooms.forEach(([offsetX, offsetY, size, lean], index) => {
-      const bloomX = cx + offsetX * rx * .74 + Math.sin(time * .0007 + index * 3.4) * 2.2 * unit;
-      const sway = Math.sin(time * .0013 + index * 1.9) * .16;
-      const stand = size * unit * .9;
+    spots.blooms.forEach((bloom, index) => {
+      const node = bloomNodes[index];
+      const stand = bloom.size * .9;
+      // The push tips the flower as well as moving it, so it leans away rather than
+      // sliding across the water like a game piece.
+      const tilt = bloom.lean * .12 + bloom.sway * .5 + node.x * .016;
       surface.push({
-        y: cy + offsetY * ry * .68 + .1,
+        y: bloom.y + node.y + .1,
         paint: (bloomY) => {
-          drawStem(bloomX, bloomY, stand, lean * .12 + sway * .5);
-          drawLotus(bloomX + (lean * .12 + sway * .5) * stand * .3, bloomY - stand, size * unit, sway);
+          drawStem(bloom.x + node.x, bloomY, stand, tilt);
+          drawLotus(bloom.x + node.x + tilt * stand * .3, bloomY - stand, bloom.size, bloom.sway + node.x * .014);
         },
       });
     });
@@ -689,8 +813,10 @@ export const createMeadow = (canvas) => {
     frame = 0;
     if (destroyed || document.hidden) return;
     if (dirty || timestamp - lastRender >= 32) {
-      if (state.motion) time += Math.min(timestamp - lastRender, 64);
+      const delta = Math.min(timestamp - lastRender, 64);
+      if (state.motion) time += delta;
       lastRender = timestamp;
+      stepPhysics(delta);
       context.setTransform(1, 0, 0, 1, 0, 0);
       context.drawImage(background, 0, 0);
       context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
@@ -742,6 +868,34 @@ export const createMeadow = (canvas) => {
   return {
     landing: landingPoint,
     head: headPoint,
+    pointerAt: (x, y, pressed) => {
+      if (!state.motion) return;
+      pointer.x = x;
+      pointer.y = y;
+      pointer.pressed = Boolean(pressed);
+      if (!pointer.active) {
+        pointer.trailX = x;
+        pointer.trailY = y;
+      }
+      pointer.active = true;
+      // Trailing rings while a finger is dragging across the water, spaced by distance
+      // rather than by time so a slow drag does not pile them up.
+      if (pointer.pressed && Math.hypot(x - pointer.trailX, y - pointer.trailY) > 26) {
+        pointer.trailX = x;
+        pointer.trailY = y;
+        addRipple(x, y);
+      }
+      requestRender();
+    },
+    pointerOut: () => {
+      pointer.active = false;
+      pointer.pressed = false;
+      requestRender();
+    },
+    poke: (x, y) => {
+      addRipple(x, y);
+      requestRender();
+    },
     setState: (next) => {
       if (typeof next.growth === 'number') state.growth = clamp(next.growth);
       if (typeof next.flight === 'number') state.flight = clamp(next.flight);

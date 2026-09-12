@@ -162,6 +162,27 @@ Drawn per frame rather than into the cached backdrop, because it moves; all moti
 library: the CSP is `default-src 'self'`, the project carries no dependencies, and
 `ellipse`/`circle` already did the work.
 
+## 8g. The meadow answers touch
+The pond, the lily pads, the lotuses and the dandelion stem are all pushed by a finger and
+spring back when it leaves.
+
+It is an influence field, not a drag. Nothing calls `preventDefault` and every listener is
+passive, so the scroll that drives the entire journey is untouched — and a drag that
+happens to cross the pond simply nudges it on the way past. On a mouse it responds to
+hover; on touch it releases when the finger lifts.
+
+Each object carries a damped spring (zeta around 0.6, so it overshoots once and settles in
+roughly half a second). Force constants are derived from the displacement wanted, since a
+spring settles at `force / stiffness` — a first pass picked them by feel and bent the stem
+through the floor, throwing the seedhead off-screen at 361px of travel. Targets are now
+about 11px for pads, 12px for blooms and 20px for the stem head, each with a hard clamp
+behind it so no combination of a long frame and a close touch can fling anything.
+
+The stem bends on the same lever the breath uses, scaled by how far up it is touched: a
+stem bends where it is furthest from its root. Blooms tip as well as shift, so they lean
+rather than slide. Touching the water leaves expanding rings, and dragging leaves a trail
+of them spaced by distance rather than time. Reduced motion disables the whole field.
+
 ## 9. Birthday beat — only at the end
 Everything before the flight stays universal. Sequenced under the signature, plain and
 tender: "Happy birthday, <name>." in serif italic, nothing more. The existing

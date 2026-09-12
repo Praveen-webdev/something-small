@@ -492,6 +492,37 @@ const askBeforeBeginning = () => {
   elements.confirmContinue.focus({ preventScroll: true });
 };
 
+// Pointer input for the meadow. Every listener is passive and none calls
+// preventDefault, so the scroll that drives the whole journey keeps working and a drag
+// that happens to pass over the pond simply nudges it along the way.
+const meadowPoint = (event) => {
+  const bounds = elements.meadow.getBoundingClientRect();
+  return { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
+};
+
+if (meadow) {
+  window.addEventListener('pointermove', (event) => {
+    const point = meadowPoint(event);
+    meadow.pointerAt(point.x, point.y, event.pointerType === 'touch' || event.buttons > 0);
+  }, { passive: true });
+  window.addEventListener('pointerdown', (event) => {
+    const point = meadowPoint(event);
+    meadow.pointerAt(point.x, point.y, true);
+    meadow.poke(point.x, point.y);
+  }, { passive: true });
+  window.addEventListener('pointerup', (event) => {
+    // A finger that lifts is gone; a mouse is still hovering.
+    if (event.pointerType === 'touch') {
+      meadow.pointerOut();
+      return;
+    }
+    const point = meadowPoint(event);
+    meadow.pointerAt(point.x, point.y, false);
+  }, { passive: true });
+  window.addEventListener('pointercancel', () => meadow.pointerOut(), { passive: true });
+  document.addEventListener('pointerleave', () => meadow.pointerOut(), { passive: true });
+}
+
 chapterButtons.forEach((button, index) => button.addEventListener('click', () => goToChapter(index)));
 elements.scrollPrompt.addEventListener('click', () => goToChapter(Math.min(4, chapter + 1)));
 elements.beginButton.addEventListener('click', askBeforeBeginning);
