@@ -138,23 +138,12 @@ const goToChapter = (index, immediate = false) => {
   window.scrollTo({ top: chapterPositions[index] * scrollRange, behavior: immediate || reducedMotion.matches ? 'instant' : 'smooth' });
 };
 
-// Measured rather than guessed: text wraps differently per device, the on-screen
-// keyboard shrinks the viewport, and the wish field appears late. A ResizeObserver on
-// the copy keeps the flower out of its way in every one of those cases.
-const updateHeadroom = () => {
-  if (!meadow) return;
-  const copy = elements.storyCopy.getBoundingClientRect();
-  const view = elements.viewport.getBoundingClientRect();
-  meadow.setState({ headroom: Math.max(0, copy.bottom - view.top + 14) });
-};
-
 const measure = () => {
   const previousRange = scrollRange;
   scrollRange = Math.max(1, elements.journey.offsetHeight - elements.viewport.offsetHeight);
   if (previousRange > 1 && previousRange !== scrollRange && phase === 'growing') {
     window.scrollTo({ top: progress * scrollRange, behavior: 'instant' });
   }
-  updateHeadroom();
   updateGrowth();
 };
 
@@ -317,6 +306,15 @@ const beginListening = () => {
   }
 };
 
+// The number sits on the seedhead itself rather than in a disc of its own, so it has to
+// follow the actual flower rather than a guessed percentage of the viewport.
+const placeCountdown = () => {
+  const point = meadow?.head();
+  if (!point) return;
+  elements.countdown.style.left = `${point.x}px`;
+  elements.countdown.style.top = `${point.y}px`;
+};
+
 const beginCountdown = () => {
   clearTimeout(timer);
   phase = 'countdown';
@@ -324,6 +322,7 @@ const beginCountdown = () => {
   setControls();
   meadow?.setState({ growth: 1 });
   sound?.setGrowth(1);
+  placeCountdown();
   elements.cancelButton.focus({ preventScroll: true });
   let count = 3;
   const tick = () => {
@@ -516,6 +515,7 @@ window.addEventListener('scroll', () => {
 window.addEventListener('resize', () => {
   measure();
   if (!elements.replaySpot.hidden) placeReplaySpot();
+  if (phase === 'countdown') placeCountdown();
 }, { passive: true });
 window.addEventListener('pagehide', () => {
   stopMicrophone();
@@ -546,7 +546,6 @@ document.addEventListener('visibilitychange', () => {
 });
 reducedMotion.addEventListener('change', () => meadow?.setState({ motion: !reducedMotion.matches }));
 meadow?.setState({ motion: !reducedMotion.matches });
-if (meadow && 'ResizeObserver' in window) new ResizeObserver(updateHeadroom).observe(elements.storyCopy);
 if (!meadow) {
   elements.gentleNote.textContent = messages.canvasFallback;
   console.warn('Canvas 2D is not available in this browser.');

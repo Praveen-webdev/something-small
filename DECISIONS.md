@@ -120,13 +120,23 @@ ring. `.end-controls` is gone entirely, since that note was all it held. The rip
 tightened from 2.6x to keep clear of the ring, and `textLength` pins the arc so the text
 cannot grow into the dot on a different font metric.
 
-## 8d. The flower yields to the copy
-The stem is capped so the seedhead can never reach the text above it. `main.js` measures
-`.story-copy` and hands the meadow a `headroom` value; `drawFlower` limits `stemHeight`
-so the puff — 80 local units across at full opening — always clears it. A ResizeObserver
-on the copy keeps this true as text wraps differently, as the wish field appears, and as
-the viewport changes. In normal portrait the cap does not bind at all; it only takes
-effect where the flower would otherwise collide.
+The ring path starts at 6 o'clock with the text centred at 50%, not at 9 o'clock centred
+at 25%. With the earlier geometry half the sentence (81 units) exceeded the 75 units of
+path preceding the centre point, and SVG silently drops glyphs that fall before a path
+starts — so the leading "E" of "Every" was never drawn.
+
+## 8d. The flower and the wish copy
+An earlier version capped the stem so the seedhead could never reach the copy. Reverted:
+shortening the flower to make room was solving the wrong end of the problem. The wish
+description lost "Something little. Something wild." instead, which frees the line the
+field needed and leaves the dandelion at full height.
+
+## 8e. The countdown sits on the seedhead
+No disc, no border, no glow ring. The numeral is drawn straight onto the white puff in
+serif, with only a faint paper-coloured halo to hold it against the busier parts of the
+meadow. `meadow.head()` reports the seedhead position in CSS pixels — sway excluded, so
+the number does not drift with the breeze — and the countdown is pinned to it when the
+phase begins and again on resize.
 
 ## 9. Birthday beat — only at the end
 Everything before the flight stays universal. Sequenced under the signature, plain and
