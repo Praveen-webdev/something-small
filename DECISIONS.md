@@ -178,6 +178,15 @@ through the floor, throwing the seedhead off-screen at 361px of travel. Targets 
 about 11px for pads, 12px for blooms and 20px for the stem head, each with a hard clamp
 behind it so no combination of a long frame and a close touch can fling anything.
 
+On touch this runs on touch events, not pointer events. The instant a drag becomes a
+scroll the browser fires `pointercancel` and stops delivering `pointermove` — which would
+end the interaction at exactly the moment the finger is crossing the meadow. Passive
+`touchmove` keeps arriving throughout. Pointer events are kept for the mouse only, since
+hover is something a finger does not have. The canvas rect is cached rather than measured
+per event: `touchmove` fires continuously while scrolling, and `getBoundingClientRect` on
+each one is a layout read during the busiest moment on the page. The rect is safe to cache
+because the canvas fills a viewport that is sticky at `top: 0`.
+
 The stem bends on the same lever the breath uses, scaled by how far up it is touched: a
 stem bends where it is furthest from its root. Blooms tip as well as shift, so they lean
 rather than slide. Touching the water leaves expanding rings, and dragging leaves a trail

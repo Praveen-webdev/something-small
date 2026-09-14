@@ -141,6 +141,7 @@ const goToChapter = (index, immediate = false) => {
 const measure = () => {
   const previousRange = scrollRange;
   scrollRange = Math.max(1, elements.journey.offsetHeight - elements.viewport.offsetHeight);
+  refreshMeadowBounds();
   if (previousRange > 1 && previousRange !== scrollRange && phase === 'growing') {
     window.scrollTo({ top: progress * scrollRange, behavior: 'instant' });
   }
@@ -493,33 +494,62 @@ const askBeforeBeginning = () => {
 };
 
 // Pointer input for the meadow. Every listener is passive and none calls
-// preventDefault, so the scroll that drives the whole journey keeps working and a drag
-// that happens to pass over the pond simply nudges it along the way.
-const meadowPoint = (event) => {
-  const bounds = elements.meadow.getBoundingClientRect();
-  return { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
+// preventDefault, so the scroll that drives the whole journey keeps working.
+//
+// The canvas fills a viewport that is sticky at top:0, so its client rect does not move
+// while the page scrolls. Caching it matters: touchmove fires continuously during a
+// scroll, and calling getBoundingClientRect on each one is a layout read in the middle
+// of the busiest moment on the page.
+let meadowBounds = null;
+const refreshMeadowBounds = () => {
+  meadowBounds = elements.meadow?.getBoundingClientRect() || null;
+};
+
+const meadowPoint = (clientX, clientY) => {
+  if (!meadowBounds) refreshMeadowBounds();
+  return { x: clientX - (meadowBounds?.left || 0), y: clientY - (meadowBounds?.top || 0) };
 };
 
 if (meadow) {
+  refreshMeadowBounds();
+
+  // Touch goes through touch events rather than pointer events on purpose. As soon as a
+  // touch turns into a scroll the browser fires pointercancel and stops delivering
+  // pointermove, which would end the interaction at exactly the moment the finger is
+  // travelling across the meadow. Passive touchmove keeps arriving all the way through.
+  const feedTouch = (touch) => {
+    const point = meadowPoint(touch.clientX, touch.clientY);
+    meadow.pointerAt(point.x, point.y, true);
+    return point;
+  };
+  window.addEventListener('touchstart', (event) => {
+    const point = feedTouch(event.touches[0]);
+    meadow.poke(point.x, point.y);
+  }, { passive: true });
+  window.addEventListener('touchmove', (event) => feedTouch(event.touches[0]), { passive: true });
+  const endTouch = (event) => {
+    if (!event.touches.length) meadow.pointerOut();
+  };
+  window.addEventListener('touchend', endTouch, { passive: true });
+  window.addEventListener('touchcancel', endTouch, { passive: true });
+
+  // Mouse only: pointer events give hover, which a finger does not have.
   window.addEventListener('pointermove', (event) => {
-    const point = meadowPoint(event);
-    meadow.pointerAt(point.x, point.y, event.pointerType === 'touch' || event.buttons > 0);
+    if (event.pointerType === 'touch') return;
+    const point = meadowPoint(event.clientX, event.clientY);
+    meadow.pointerAt(point.x, point.y, event.buttons > 0);
   }, { passive: true });
   window.addEventListener('pointerdown', (event) => {
-    const point = meadowPoint(event);
+    if (event.pointerType === 'touch') return;
+    const point = meadowPoint(event.clientX, event.clientY);
     meadow.pointerAt(point.x, point.y, true);
     meadow.poke(point.x, point.y);
   }, { passive: true });
   window.addEventListener('pointerup', (event) => {
-    // A finger that lifts is gone; a mouse is still hovering.
-    if (event.pointerType === 'touch') {
-      meadow.pointerOut();
-      return;
-    }
-    const point = meadowPoint(event);
+    if (event.pointerType === 'touch') return;
+    const point = meadowPoint(event.clientX, event.clientY);
     meadow.pointerAt(point.x, point.y, false);
   }, { passive: true });
-  window.addEventListener('pointercancel', () => meadow.pointerOut(), { passive: true });
   document.addEventListener('pointerleave', () => meadow.pointerOut(), { passive: true });
 }
 
