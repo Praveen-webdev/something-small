@@ -312,7 +312,10 @@ const sampleText = (text, font, maxWidth, lineHeight) => {
   });
   if (line) lines.push(line);
   if (!lines.length) return null;
-  const width = Math.ceil(Math.min(maxWidth, Math.max(...lines.map((entry) => ink.measureText(entry).width)))) + 6;
+  // The canvas has to fit the longest line as it actually measures, not the width the
+  // wrap was aiming at - a single unbreakable word can exceed it, and clamping here
+  // clipped the ends off.
+  const width = Math.ceil(Math.max(...lines.map((entry) => ink.measureText(entry).width))) + 8;
   const height = Math.ceil(lines.length * lineHeight) + 6;
   sheet.width = width;
   sheet.height = height;
@@ -453,9 +456,10 @@ export const createDandelion = (canvas) => {
   const crown = new THREE.Group();
   plant.add(crown);
 
+  const receptacleMaterial = new THREE.MeshStandardMaterial({ color: 0x9aae61, roughness: .85, metalness: 0 });
   const receptacle = new THREE.Mesh(
     new THREE.SphereGeometry(9.2, 20, 12, 0, Math.PI * 2, 0, Math.PI * .58),
-    new THREE.MeshStandardMaterial({ color: 0x9aae61, roughness: .85, metalness: 0 }),
+    receptacleMaterial,
   );
   receptacle.position.y = -1.5;
   crown.add(receptacle);
@@ -477,12 +481,16 @@ export const createDandelion = (canvas) => {
   crown.add(floretMesh);
 
   const FLY = 72;
+  // A clone, because the plant fades out at the end of the flight and the seeds crossing
+  // the sky must not fade with it. They share the splay uniform through the closure.
+  const flySeedMaterial = seedMaterial.clone();
+  flySeedMaterial.onBeforeCompile = seedMaterial.onBeforeCompile;
   const flyGeometry = buildSeed(randomGenerator(7741));
-  const flyMesh = new THREE.InstancedMesh(flyGeometry, seedMaterial, FLY);
+  const flyMesh = new THREE.InstancedMesh(flyGeometry, flySeedMaterial, FLY);
   flyMesh.frustumCulled = false;
   scene.add(flyMesh);
   // The one seed the eye follows, the one that lands and sprouts.
-  const hero = new THREE.Mesh(flyGeometry, seedMaterial);
+  const hero = new THREE.Mesh(flyGeometry, flySeedMaterial);
   hero.frustumCulled = false;
   scene.add(hero);
 
@@ -550,29 +558,40 @@ export const createDandelion = (canvas) => {
       uSize: { value: 3 },
       uDepth: { value: DEPTH },
       uSpan: { value: new THREE.Vector2(240, 150) },
+      uTarget: { value: new THREE.Vector3() },
       uColor: { value: new THREE.Color(0xfdfbec) },
       uInk: { value: new THREE.Color(0x2c4634) },
     },
     vertexShader: `
       attribute float aSeed;
+      attribute float aOrder;
       uniform float uProgress;
       uniform float uSize;
       uniform float uDepth;
       uniform vec2 uSpan;
+      uniform vec3 uTarget;
       varying float vFade;
       varying float vLocal;
       void main() {
-        float local = clamp((uProgress - aSeed * .3) / .7, 0., 1.);
+        // The sentence peels off in reading order, first word first.
+        float stagger = aOrder * .2 + aSeed * .14;
+        float local = clamp((uProgress - stagger) / max(.12, 1. - stagger), 0., 1.);
         vLocal = local;
-        float lift = local * local;
-        vec3 shifted = position;
-        shifted.x += lift * uSpan.x * (.55 + aSeed);
-        shifted.y += lift * uSpan.y * (.5 + aSeed * .9) + sin(local * 7. + aSeed * 12.) * 9.;
-        shifted.z += sin(local * 5. + aSeed * 9.) * 40.;
-        vFade = 1. - smoothstep(.38, 1., local);
-        vec4 viewed = modelViewMatrix * vec4(shifted, 1.);
-        // Ink is tight; down is fluffier. The mote swells a little as it changes.
-        gl_PointSize = uSize * (1. + local * .55) * (uDepth / max(1., -viewed.z));
+        // Out on the wind with the rest of the seeds, then in behind the one that is
+        // going to land. The control point is where the wind would have taken it.
+        vec3 origin = position;
+        vec3 control = origin + vec3(
+          uSpan.x * (.55 + aSeed * .7),
+          uSpan.y * (.45 + aSeed * .8),
+          (aSeed - .5) * 120.
+        );
+        float t = local * local * (3. - 2. * local);
+        vec3 drawn = mix(mix(origin, control, t), mix(control, uTarget, t), t);
+        drawn.y += sin(local * 9. + aSeed * 12.) * 7. * (1. - local);
+        vFade = 1. - smoothstep(.82, 1., local);
+        vec4 viewed = modelViewMatrix * vec4(drawn, 1.);
+        // Ink is tight, down is fluffier, and it draws in again as it reaches the seed.
+        gl_PointSize = uSize * (1. + local * .5) * (1. - local * .4) * (uDepth / max(1., -viewed.z));
         gl_Position = projectionMatrix * viewed;
       }
     `,
@@ -590,6 +609,13 @@ export const createDandelion = (canvas) => {
   });
   let wishCloud = null;
   let wishProgress = 1;
+  // The words are on the seed's clock, not their own: they arrive exactly as it lands.
+  let wishFrom = 0;
+  const WISH_LANDS = .95;
+
+  // Everything that belongs to the plant itself, and so fades with it once the wish has
+  // gone. Deliberately excludes the seeds in flight, the hero and the wish motes.
+  const plantMaterials = [leafMaterial, stemMaterial, floretMaterial, bractMaterial, seedMaterial, budMaterial, receptacleMaterial];
 
   // --- per-frame state ---------------------------------------------------------------
   const state = { growth: 0, flight: 0, breath: 0, motion: true, bend: 0 };
@@ -637,23 +663,19 @@ export const createDandelion = (canvas) => {
 
     plant.position.set(baseX - width / 2, height / 2 - baseY, 0);
     plant.scale.setScalar(scale);
+    // The 2D layer faded the plant alone and left the seeds crossing the sky at full
+    // strength. Fading the whole canvas took the hero seed and the words with it, at
+    // exactly the moment they are the only thing worth looking at.
     const fade = 1 - ease((state.flight - .8) / .2);
     if (fade !== lastFade) {
-      canvas.style.opacity = fade === 1 ? '' : String(fade);
+      const solid = fade > .999;
+      plantMaterials.forEach((material) => {
+        material.transparent = !solid;
+        material.opacity = fade;
+        material.depthWrite = solid;
+      });
       lastFade = fade;
     }
-    if (wishCloud && wishProgress < 1) {
-      wishProgress = Math.min(1, wishProgress + delta / 3.4);
-      wishMaterial.uniforms.uProgress.value = wishProgress;
-      wishMaterial.uniforms.uSize.value = 3.6 * pixelRatio * (height / 800);
-      wishMaterial.uniforms.uSpan.value.set(width * .34, height * .2);
-      if (wishProgress >= 1) {
-        scene.remove(wishCloud);
-        wishCloud.geometry.dispose();
-        wishCloud = null;
-      }
-    }
-
     const headX = sway + stage.stem * 7 + breath * 10 + tremble + bend;
     const headWorldX = baseX + headX * scale - width / 2;
     const headWorldY = height / 2 - (baseY - stemHeight * scale);
@@ -682,7 +704,7 @@ export const createDandelion = (canvas) => {
       }
       flyMesh.instanceMatrix.needsUpdate = true;
 
-      if (hero.visible) {
+      if (flying) {
         // The same arc the 2D layer flew, lifted into world space and bowed towards the
         // reader through the middle of the journey.
         const p = ease(clamp((state.flight - .06) / .9));
@@ -713,6 +735,19 @@ export const createDandelion = (canvas) => {
       haloMaterial.uniforms.uColor.value.copy(stage.puff > .3 ? haloWhite : haloGold);
     }
 
+    if (wishCloud) {
+      wishProgress = clamp((state.flight - wishFrom) / Math.max(.08, WISH_LANDS - wishFrom));
+      wishMaterial.uniforms.uProgress.value = wishProgress;
+      wishMaterial.uniforms.uSize.value = 3.6 * pixelRatio * (height / 800);
+      wishMaterial.uniforms.uSpan.value.set(width * .3, height * .17);
+      wishMaterial.uniforms.uTarget.value.copy(hero.position);
+      if (wishProgress >= 1) {
+        scene.remove(wishCloud);
+        wishCloud.geometry.dispose();
+        wishCloud = null;
+      }
+    }
+
     plant.visible = shown.growth > .008 && fade > .002;
     if (!plant.visible) return flying || Boolean(wishCloud);
 
@@ -721,7 +756,7 @@ export const createDandelion = (canvas) => {
     if (groundShadow.visible) {
       groundShadow.position.set(bend * .18, 3, -3);
       groundShadow.scale.set(178 * leafAmount, 34 * leafAmount, 1);
-      groundMaterial.uniforms.uAlpha.value = .15 * leafAmount;
+      groundMaterial.uniforms.uAlpha.value = .15 * leafAmount * fade;
     }
 
     // Leaves.
@@ -857,9 +892,7 @@ export const createDandelion = (canvas) => {
     const drew = paint(delta);
     if (drew || !blank) renderer.render(scene, camera);
     blank = !drew;
-    // The wish cloud has to keep its own frames coming: under reduced motion nothing else
-    // would ask for them, and the motes would hang in the air half dissolved.
-    if (state.motion || wishProgress < 1 || Math.abs(state.growth - shown.growth) > .0002 || Math.abs(velocity.growth) > .0002) {
+    if (state.motion || Math.abs(state.growth - shown.growth) > .0002 || Math.abs(velocity.growth) > .0002) {
       frame = requestAnimationFrame(render);
     }
   };
@@ -909,16 +942,26 @@ export const createDandelion = (canvas) => {
       const count = points.length / 2;
       const positions = new Float32Array(count * 3);
       const seeds = new Float32Array(count);
+      const order = new Float32Array(count);
       const scatter = randomGenerator(9133);
+      let leftmost = Infinity;
+      let rightmost = -Infinity;
+      for (let index = 0; index < count; index += 1) {
+        leftmost = Math.min(leftmost, points[index * 2]);
+        rightmost = Math.max(rightmost, points[index * 2]);
+      }
+      const across = Math.max(1, rightmost - leftmost);
       for (let index = 0; index < count; index += 1) {
         positions[index * 3] = centreX + points[index * 2] - width / 2;
         positions[index * 3 + 1] = height / 2 - (centreY + points[index * 2 + 1]);
         positions[index * 3 + 2] = (scatter() - .5) * 70;
         seeds[index] = scatter();
+        order[index] = (points[index * 2] - leftmost) / across;
       }
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       geometry.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 1));
+      geometry.setAttribute('aOrder', new THREE.BufferAttribute(order, 1));
       if (wishCloud) {
         scene.remove(wishCloud);
         wishCloud.geometry.dispose();
@@ -927,6 +970,7 @@ export const createDandelion = (canvas) => {
       wishCloud.frustumCulled = false;
       scene.add(wishCloud);
       wishProgress = 0;
+      wishFrom = state.flight;
       wishMaterial.uniforms.uProgress.value = 0;
       wake();
       return true;

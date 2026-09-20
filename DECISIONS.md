@@ -233,6 +233,12 @@ arc it always did, bowed towards the reader through the middle of the journey.
 The sprout where it lands stays 2D. It sits flat on the ground and nothing is gained by
 lifting it.
 
+The plant fades out at the end of the flight; the seeds crossing the sky do not. The 2D
+layer had always drawn them after it restored the faded context, and doing the fade as
+canvas opacity on the 3D layer quietly took the hero seed and the wish motes down with the
+plant - at exactly the moment they are the only thing worth looking at. The fade is now
+applied to the plant's own materials, and the seeds in flight carry a separate one.
+
 The 2D plant is not deleted. If the canvas is missing or WebGL is unavailable, `flat()` is
 true and `drawFlower` paints the original flower and the original flight exactly as before.
 
@@ -247,18 +253,32 @@ flower still feels directly under the reader's thumb.
 
 ## 8j. Her words come apart into down
 The wish echo already drifted on the same wind as the seeds and faded. It now ends
-differently: at about three quarters of the way through the drift, the letters are sampled
-where they are standing and handed to the 3D layer as motes, and the DOM text fades out
-under them. What you see is the wish turning into down rather than dimming.
+differently: part way through the drift the letters are sampled where they are standing and
+handed to the 3D layer as motes, and the DOM text fades out under them. What you see is the
+wish turning into down rather than dimming.
+
+The motes then go where the seeds go. They lift out on the same wind, and then bend in
+behind the one seed that is going to land, gathering into its wake and disappearing into it
+as it settles. Each mote flies a quadratic bezier whose control point is where the wind
+alone would have carried it and whose end point is the seed's position this frame, so the
+convergence is real rather than a drift that happens to finish nearby.
+
+That means the words are on the seed's clock, not their own. Progress is derived from
+`flight` rather than accumulated from elapsed time, and it reaches one at `.95` - the beat
+the seed comes to rest and the sprout starts. It also makes the whole thing reproducible at
+any moment of the flight, which is how it was checked.
+
+The sentence peels off in reading order, first word first, from an `aOrder` attribute baked
+at sample time.
 
 The motes start the colour the text is written in and warm to cream as they lift, staggered
 so the change runs across the sentence rather than happening to all of it at once. Cream
 from the start was invisible against a cream sky, and ink becoming light is the idea
 anyway.
 
-All of the drift, stagger and fade happens in the vertex shader from one progress uniform.
-The CPU does nothing per frame, which is what keeps it smooth on top of everything else
-running during the flight.
+All of the drift, stagger, convergence and fade happens in the vertex shader from one
+progress uniform and one target. The CPU does nothing per frame, which is what keeps it
+smooth on top of everything else running during the flight.
 
 Nothing is stored. The string arrives as an argument to `dissolveWish`, is drawn once to an
 offscreen canvas, read back as positions, and dropped. It never leaves the page, so the
