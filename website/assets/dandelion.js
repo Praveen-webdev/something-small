@@ -384,6 +384,16 @@ export const createDandelion = (canvas) => {
   floretMesh.frustumCulled = false;
   crown.add(floretMesh);
 
+  const FLY = 72;
+  const flyGeometry = buildSeed(randomGenerator(7741));
+  const flyMesh = new THREE.InstancedMesh(flyGeometry, seedMaterial, FLY);
+  flyMesh.frustumCulled = false;
+  scene.add(flyMesh);
+  // The one seed the eye follows, the one that lands and sprouts.
+  const hero = new THREE.Mesh(flyGeometry, seedMaterial);
+  hero.frustumCulled = false;
+  scene.add(hero);
+
   const SEEDS = 264;
   const seedMesh = new THREE.InstancedMesh(buildSeed(random), seedMaterial, SEEDS);
   seedMesh.frustumCulled = false;
@@ -403,6 +413,25 @@ export const createDandelion = (canvas) => {
       jitter: random() * .14 - .07,
     });
   }
+  const flyers = [];
+  for (let index = 0; index < FLY; index += 1) {
+    flyers.push({
+      angle: random() * Math.PI * 2,
+      radius: Math.sqrt(random()) * 53,
+      delay: random() * .19,
+      span: .55 + random() * .2,
+      speed: .65 + random() * .8,
+      rise: .15 + random() * .3,
+      size: 17 + random() * 14,
+      // Some seeds come towards the reader and some go away behind the plant. That is the
+      // whole reason to do this in three dimensions rather than scatter sprites.
+      depth: 40 + random() * 118,
+      drift: (random() - .5) * 460,
+      spin: new THREE.Vector3(random() - .5, random() - .5, random() - .5).normalize(),
+      phase: random() * Math.PI * 2,
+    });
+  }
+
   const seeds = [];
   for (let index = 0; index < SEEDS; index += 1) {
     const level = (index + .5) / SEEDS;
@@ -468,8 +497,55 @@ export const createDandelion = (canvas) => {
       canvas.style.opacity = fade === 1 ? '' : String(fade);
       lastFade = fade;
     }
+    const headX = sway + stage.stem * 7 + breath * 10 + tremble + bend;
+    const flying = state.flight > 0;
+    flyMesh.visible = flying;
+    hero.visible = flying && state.flight < .97;
+    if (flying) {
+      const headWorldX = baseX + headX * scale - width / 2;
+      const headWorldY = height / 2 - (baseY - stemHeight * scale);
+      const headWorldZ = (6 + swayZ * 1.4 + breath * 5) * scale;
+      for (let index = 0; index < FLY; index += 1) {
+        const flyer = flyers[index];
+        const progress = clamp((state.flight - flyer.delay) / flyer.span);
+        if (state.flight < flyer.delay || progress >= 1) {
+          hide(flyMesh, index);
+          continue;
+        }
+        const spread = flyer.radius * scale;
+        position.set(
+          headWorldX + Math.cos(flyer.angle) * spread + Math.pow(progress, .75) * width * flyer.speed,
+          headWorldY + Math.sin(flyer.angle) * spread + Math.sin(progress * Math.PI * .8) * height * flyer.rise - Math.sin(progress * 8 + index) * 15,
+          headWorldZ + Math.sin(progress * 5 + flyer.phase) * flyer.depth + progress * flyer.drift,
+        );
+        quaternion.setFromAxisAngle(flyer.spin, flyer.phase + progress * 9);
+        const size = flyer.size * scale;
+        matrix.compose(position, quaternion, scaleVector.set(size, size, size));
+        flyMesh.setMatrixAt(index, matrix);
+      }
+      flyMesh.instanceMatrix.needsUpdate = true;
+
+      if (hero.visible) {
+        // The same arc the 2D layer flew, lifted into world space and bowed towards the
+        // reader through the middle of the journey.
+        const p = ease(clamp((state.flight - .06) / .9));
+        const q = 1 - p;
+        const landingX = width * (landscape ? .5 : width < 600 ? .83 : .66);
+        const landingY = height * .87;
+        const acrossOf = (value) => value - width / 2;
+        const upOf = (value) => height / 2 - value;
+        hero.position.set(
+          q ** 3 * acrossOf(baseX + headX * scale + 20 * scale) + 3 * q * q * p * acrossOf(width * .93) + 3 * q * p * p * acrossOf(width * 1.02) + p ** 3 * acrossOf(landingX),
+          q ** 3 * upOf(baseY - stemHeight * scale - 20 * scale) + 3 * q * q * p * upOf(height * .12) + 3 * q * p * p * upOf(height * .5) + p ** 3 * upOf(landingY - 22 * scale),
+          q ** 3 * headWorldZ + 3 * q * q * p * 300 + 3 * q * p * p * 150,
+        );
+        hero.quaternion.setFromAxisAngle(axis.set(.35, .5, .79).normalize(), .6 + p * 7);
+        hero.scale.setScalar(42 * scale);
+      }
+    }
+
     plant.visible = shown.growth > .008 && fade > .002;
-    if (!plant.visible) return false;
+    if (!plant.visible) return flying;
 
     // Leaves.
     const leafAmount = stage.leaves;
@@ -483,7 +559,6 @@ export const createDandelion = (canvas) => {
 
     // Stem. The control points mirror the 2D bezier so the plant keeps the same posture
     // it always had, with a little depth added on the z axis.
-    const headX = sway + stage.stem * 7 + breath * 10 + tremble + bend;
     curve.v0.set(0, 0, 0);
     curve.v1.set(-9 + bend * .12, stemHeight * .35, 4 + swayZ * .3);
     curve.v2.set(15 + sway + bend * .5, stemHeight * .66, -3 + swayZ);

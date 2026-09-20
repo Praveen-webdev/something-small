@@ -222,8 +222,19 @@ and fan run off separate curves; driving both from one left the flower opening i
 inside its own bud. Likewise the bud body has to yield faster than the thing emerging from
 it, in both directions.
 
+The seeds fly in 3D as well. They cannot stay in the head's group - it is scaled by
+maturity and turns with the stem tip - so released seeds get their own instanced mesh in
+world space and cross the screen freely. Each one tumbles on its own axis and carries its
+own z, so some pass close to the reader and some go away behind the plant, and perspective
+sizes them without being asked. That depth is the whole argument for doing the flight in
+3D rather than scattering sprites. The single seed that lands and sprouts flies the same
+arc it always did, bowed towards the reader through the middle of the journey.
+
+The sprout where it lands stays 2D. It sits flat on the ground and nothing is gained by
+lifting it.
+
 The 2D plant is not deleted. If the canvas is missing or WebGL is unavailable, `flat()` is
-true and `drawFlower` paints the original flower exactly as before.
+true and `drawFlower` paints the original flower and the original flight exactly as before.
 
 ## 8i. Growth is sprung, not scrubbed
 Scroll sets a target; a critically damped spring follows it at 60fps on the 3D layer's own

@@ -488,29 +488,32 @@ export const createMeadow = (canvas, bloomCanvas) => {
     context.restore();
 
     if (flight > 0) {
-      const random = randomGenerator(443);
-      const flowerX = baseX + headX * scale;
-      const flowerY = baseY + headY * scale;
-      for (let index = 0; index < 65; index += 1) {
-        const angle = random() * Math.PI * 2;
-        const radius = Math.sqrt(random()) * 53 * scale;
-        const delay = random() * .19;
-        const progress = clamp((flight - delay) / (.55 + random() * .2));
-        const speed = .65 + random() * .8;
-        const seedScale = (.24 + random() * .28) * scale;
-        const rise = .15 + random() * .3;
-        if (flight < delay || progress >= 1) continue;
-        const x = flowerX + Math.cos(angle) * radius + Math.pow(progress, .75) * width * speed;
-        const y = flowerY + Math.sin(angle) * radius - Math.sin(progress * Math.PI * .8) * height * rise + Math.sin(progress * 8 + index) * 15;
-        const opacity = ease(progress * 18) * (1 - ease((progress - .76) / .24));
-        drawSeed(x, y, seedScale, -.4 + Math.sin(index + progress * 6) * .4, opacity);
-      }
-      const progress = ease(clamp((flight - .06) / .9));
-      const inverse = 1 - progress;
       const { x: landingX, y: landingY } = landingPoint();
-      const x = inverse ** 3 * (flowerX + 20 * scale) + 3 * inverse ** 2 * progress * width * .93 + 3 * inverse * progress ** 2 * width * 1.02 + progress ** 3 * landingX;
-      const y = inverse ** 3 * (flowerY - 20 * scale) + 3 * inverse ** 2 * progress * height * .12 + 3 * inverse * progress ** 2 * height * .5 + progress ** 3 * (landingY - 22 * scale);
-      if (flight < .97) drawSeed(x, y, .65 * scale, -.45 * Math.sin(progress * Math.PI) + Math.sin(progress * 11) * .15, ease(flight * 15) * (1 - ease((flight - .91) / .06)));
+      // The seeds fly in 3D now. Only the sprout where one lands is still painted here.
+      if (flat()) {
+        const random = randomGenerator(443);
+        const flowerX = baseX + headX * scale;
+        const flowerY = baseY + headY * scale;
+        for (let index = 0; index < 65; index += 1) {
+          const angle = random() * Math.PI * 2;
+          const radius = Math.sqrt(random()) * 53 * scale;
+          const delay = random() * .19;
+          const progress = clamp((flight - delay) / (.55 + random() * .2));
+          const speed = .65 + random() * .8;
+          const seedScale = (.24 + random() * .28) * scale;
+          const rise = .15 + random() * .3;
+          if (flight < delay || progress >= 1) continue;
+          const x = flowerX + Math.cos(angle) * radius + Math.pow(progress, .75) * width * speed;
+          const y = flowerY + Math.sin(angle) * radius - Math.sin(progress * Math.PI * .8) * height * rise + Math.sin(progress * 8 + index) * 15;
+          const opacity = ease(progress * 18) * (1 - ease((progress - .76) / .24));
+          drawSeed(x, y, seedScale, -.4 + Math.sin(index + progress * 6) * .4, opacity);
+        }
+        const progress = ease(clamp((flight - .06) / .9));
+        const inverse = 1 - progress;
+        const x = inverse ** 3 * (flowerX + 20 * scale) + 3 * inverse ** 2 * progress * width * .93 + 3 * inverse * progress ** 2 * width * 1.02 + progress ** 3 * landingX;
+        const y = inverse ** 3 * (flowerY - 20 * scale) + 3 * inverse ** 2 * progress * height * .12 + 3 * inverse * progress ** 2 * height * .5 + progress ** 3 * (landingY - 22 * scale);
+        if (flight < .97) drawSeed(x, y, .65 * scale, -.45 * Math.sin(progress * Math.PI) + Math.sin(progress * 11) * .15, ease(flight * 15) * (1 - ease((flight - .91) / .06)));
+      }
       if (flight > .91) {
         const sprout = ease((flight - .91) / .09);
         context.save();
