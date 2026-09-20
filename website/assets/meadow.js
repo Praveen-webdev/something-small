@@ -424,8 +424,9 @@ export const createMeadow = (canvas, bloomCanvas) => {
     context.globalAlpha = 1 - ease((flight - .8) / .2);
     if (growth > .01) {
       const leaves = ease((growth - .01) / .21);
-      ellipse(context, 0, 2, 60 * leaves, 6 * leaves, '#3e622721');
+      // The 3D layer lays its own shadow, one that leans with the stem.
       if (flat()) {
+        ellipse(context, 0, 2, 60 * leaves, 6 * leaves, '#3e622721');
         drawLeaf(-3, 2, 83 * leaves, -1.07 + sway * .002);
         drawLeaf(3, 3, 78 * leaves, 1.04 + sway * .002);
         drawLeaf(-1, 4, 62 * leaves, -.53);

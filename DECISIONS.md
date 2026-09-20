@@ -267,6 +267,24 @@ privacy line still holds exactly as written.
 Under `prefers-reduced-motion`, or with no WebGL, `spatial()` is false and the original
 fade runs unchanged.
 
+## 8k. Light through the clock, and a shadow to stand in
+Two cheap things that do most of the work of making the plant look like it is in the
+meadow rather than on top of it.
+
+A third light sits behind the plant, warm and low. Down is mostly lit from behind, which
+is why a real dandelion clock glows instead of merely being pale, and the seedhead was
+reading as flat white without it.
+
+Behind the head is a soft radial sprite: gold behind the flower, near-white behind the
+clock, nothing while the head is a shut bud. It is drawn behind the geometry and writes no
+depth, so it only shows where the seeds are not and the clock itself stays crisp. It has to
+spill well past the edge of the head to read at all - the first version was smaller than
+the clock and sat entirely hidden behind it.
+
+The same sprite, dark and squashed, is the shadow the rosette stands in. It leans with the
+stem, which the painted ellipse it replaces could not do. That ellipse is still there
+behind `flat()` for the 2D path.
+
 ## 9. Birthday beat — only at the end
 Everything before the flight stays universal. Sequenced under the signature, plain and
 tender: "Happy birthday, <name>." in serif italic, nothing more. The existing

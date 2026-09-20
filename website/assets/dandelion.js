@@ -366,9 +366,52 @@ export const createDandelion = (canvas) => {
   rim.position.set(640, 180, -780);
   scene.add(rim);
 
+  const radial = (color, power) => new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    uniforms: { uColor: { value: new THREE.Color(color) }, uAlpha: { value: 0 }, uPower: { value: power } },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.);
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 uColor;
+      uniform float uAlpha;
+      uniform float uPower;
+      varying vec2 vUv;
+      void main() {
+        float fall = pow(clamp(1. - length(vUv - .5) * 2., 0., 1.), uPower);
+        float amount = fall * uAlpha;
+        if (amount < .004) discard;
+        gl_FragColor = vec4(uColor, amount);
+      }
+    `,
+  });
+
+  // Backlight. Real down is mostly lit from behind, which is why a dandelion clock glows
+  // rather than simply being pale.
+  const back = new THREE.DirectionalLight(0xfff2cf, 1.15);
+  back.position.set(120, 620, -980);
+  scene.add(back);
+
+  const haloMaterial = radial(0xfff6d8, 1.7);
+  const halo = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), haloMaterial);
+  halo.frustumCulled = false;
+  scene.add(halo);
+  const haloGold = new THREE.Color(0xffdf92);
+  const haloWhite = new THREE.Color(0xfff8e2);
+
+  const groundMaterial = radial(0x3d5c2c, 1.35);
+  const groundShadow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), groundMaterial);
+  groundShadow.frustumCulled = false;
+
   const random = randomGenerator(20609);
   const plant = new THREE.Group();
   scene.add(plant);
+  plant.add(groundShadow);
 
   const leafMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .74, metalness: 0, side: THREE.DoubleSide });
   const stemMaterial = new THREE.MeshStandardMaterial({ color: 0x57763f, roughness: .68, metalness: 0 });
@@ -612,13 +655,13 @@ export const createDandelion = (canvas) => {
     }
 
     const headX = sway + stage.stem * 7 + breath * 10 + tremble + bend;
+    const headWorldX = baseX + headX * scale - width / 2;
+    const headWorldY = height / 2 - (baseY - stemHeight * scale);
+    const headWorldZ = (6 + swayZ * 1.4 + breath * 5) * scale;
     const flying = state.flight > 0;
     flyMesh.visible = flying;
     hero.visible = flying && state.flight < .97;
     if (flying) {
-      const headWorldX = baseX + headX * scale - width / 2;
-      const headWorldY = height / 2 - (baseY - stemHeight * scale);
-      const headWorldZ = (6 + swayZ * 1.4 + breath * 5) * scale;
       for (let index = 0; index < FLY; index += 1) {
         const flyer = flyers[index];
         const progress = clamp((state.flight - flyer.delay) / flyer.span);
@@ -658,11 +701,30 @@ export const createDandelion = (canvas) => {
       }
     }
 
+    // The light through the head: warm gold behind the flower, near-white behind the
+    // clock, and nothing at all while it is a shut bud.
+    const glow = Math.max(stage.puff * .5, stage.bloom * .26) * fade * (1 - state.flight * .85);
+    halo.visible = glow > .004 && stage.maturity > .2;
+    if (halo.visible) {
+      const reach = mix(250, 340, stage.puff) * stage.maturity * scale;
+      halo.position.set(headWorldX, headWorldY, headWorldZ - 34 * scale);
+      halo.scale.set(reach, reach, 1);
+      haloMaterial.uniforms.uAlpha.value = glow;
+      haloMaterial.uniforms.uColor.value.copy(stage.puff > .3 ? haloWhite : haloGold);
+    }
+
     plant.visible = shown.growth > .008 && fade > .002;
     if (!plant.visible) return flying || Boolean(wishCloud);
 
-    // Leaves.
     const leafAmount = stage.leaves;
+    groundShadow.visible = leafAmount > .02;
+    if (groundShadow.visible) {
+      groundShadow.position.set(bend * .18, 3, -3);
+      groundShadow.scale.set(178 * leafAmount, 34 * leafAmount, 1);
+      groundMaterial.uniforms.uAlpha.value = .15 * leafAmount;
+    }
+
+    // Leaves.
     leaves.forEach((leaf, index) => {
       leaf.visible = leafAmount > .01;
       if (!leaf.visible) return;
