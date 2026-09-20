@@ -3,7 +3,7 @@ import { createBreathListener } from './breath.js';
 import { createSound } from './sound.js';
 
 const elements = Object.fromEntries([
-  'journey', 'viewport', 'meadow', 'story-copy', 'eyebrow', 'title-line', 'title-accent',
+  'journey', 'viewport', 'meadow', 'bloom', 'story-copy', 'eyebrow', 'title-line', 'title-accent',
   'description', 'wish-field', 'wish-input', 'grow-controls', 'gentle-note',
   'scroll-prompt', 'scroll-label', 'wish-controls', 'microphone-button',
   'tap-button', 'microphone-note', 'blow-controls', 'blow-button', 'blow-note', 'countdown',
@@ -22,7 +22,7 @@ const chapterScenes = ['intro', 'sprout', 'bloom', 'change', 'wish'];
 const growthAnchors = [[0, 0], [0.06, 0.07], [0.3, 0.34], [0.55, 0.6], [0.78, 0.93], [1, 1]];
 const chapterStarts = [0, 0.06, 0.3, 0.55, 0.78];
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-const meadow = createMeadow(elements.meadow);
+const meadow = createMeadow(elements.meadow, elements.bloom);
 const sound = createSound();
 let phase = 'growing';
 let scene = 'intro';

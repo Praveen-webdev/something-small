@@ -1,3 +1,5 @@
+import { createDandelion } from './dandelion.js';
+
 const clamp = (value) => Math.max(0, Math.min(1, value));
 const ease = (value) => { const amount = clamp(value); return amount * amount * (3 - 2 * amount); };
 const randomGenerator = (seed) => () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
@@ -14,9 +16,14 @@ const ellipse = (context, x, y, radiusX, radiusY, color, rotation = 0) => {
   context.fill();
 };
 
-export const createMeadow = (canvas) => {
+export const createMeadow = (canvas, bloomCanvas) => {
   const context = canvas.getContext('2d', { alpha: false });
   if (!context) return null;
+  // The dandelion itself is drawn in WebGL on its own transparent canvas above this
+  // one. If that canvas is missing or WebGL is unavailable the 2D plant below is still
+  // here and takes over, so the page never loses its flower.
+  const dandelion = bloomCanvas ? createDandelion(bloomCanvas) : null;
+  const flat = () => !dandelion || !dandelion.alive();
   const background = document.createElement('canvas');
   const backdrop = background.getContext('2d', { alpha: false });
   const puff = document.createElement('canvas');
@@ -408,6 +415,7 @@ export const createMeadow = (canvas) => {
     const breath = state.breath;
     const tremble = breath && state.motion ? (Math.sin(time * .022) * 2.4 + Math.sin(time * .039) * 1.2) * breath : 0;
     const bend = stemNode.x / scale;
+    dandelion?.setState({ bend });
     const headX = sway + stemGrowth * 7 + breath * 10 + tremble + bend;
     const headY = -stemHeight;
     context.save();
@@ -417,62 +425,64 @@ export const createMeadow = (canvas) => {
     if (growth > .01) {
       const leaves = ease((growth - .01) / .21);
       ellipse(context, 0, 2, 60 * leaves, 6 * leaves, '#3e622721');
-      drawLeaf(-3, 2, 83 * leaves, -1.07 + sway * .002);
-      drawLeaf(3, 3, 78 * leaves, 1.04 + sway * .002);
-      drawLeaf(-1, 4, 62 * leaves, -.53);
-      drawLeaf(2, 4, 56 * leaves, .67);
-      if (stemHeight > 1) {
-        context.lineCap = 'round';
-        context.strokeStyle = '#4f713b';
-        context.lineWidth = 6.5;
-        context.beginPath();
-        context.moveTo(0, 0);
-        context.bezierCurveTo(-9 + bend * .12, -stemHeight * .35, 15 + sway + bend * .5, -stemHeight * .66, headX, headY + 6);
-        context.stroke();
-        context.strokeStyle = '#b1bd7794';
-        context.lineWidth = 2;
-        context.beginPath();
-        context.moveTo(-1.5, 0);
-        context.bezierCurveTo(-10.5 + bend * .12, -stemHeight * .35, 13.5 + sway + bend * .5, -stemHeight * .66, headX - 1.5, headY + 6);
-        context.stroke();
-        context.save();
-        context.translate(headX, headY);
-        const maturity = ease((growth - .13) / .14);
-        context.scale(maturity, maturity);
-        drawSepals(growth > .76 ? 1 : .3);
-        if (growth < .37) drawBud(ease((growth - .23) / .14));
-        else if (growth < .6) {
-          const opening = ease((growth - .37) / .1);
-          const closing = ease((growth - .55) / .06);
-          if (opening < .9) drawBud(1);
+      if (flat()) {
+        drawLeaf(-3, 2, 83 * leaves, -1.07 + sway * .002);
+        drawLeaf(3, 3, 78 * leaves, 1.04 + sway * .002);
+        drawLeaf(-1, 4, 62 * leaves, -.53);
+        drawLeaf(2, 4, 56 * leaves, .67);
+        if (stemHeight > 1) {
+          context.lineCap = 'round';
+          context.strokeStyle = '#4f713b';
+          context.lineWidth = 6.5;
+          context.beginPath();
+          context.moveTo(0, 0);
+          context.bezierCurveTo(-9 + bend * .12, -stemHeight * .35, 15 + sway + bend * .5, -stemHeight * .66, headX, headY + 6);
+          context.stroke();
+          context.strokeStyle = '#b1bd7794';
+          context.lineWidth = 2;
+          context.beginPath();
+          context.moveTo(-1.5, 0);
+          context.bezierCurveTo(-10.5 + bend * .12, -stemHeight * .35, 13.5 + sway + bend * .5, -stemHeight * .66, headX - 1.5, headY + 6);
+          context.stroke();
           context.save();
-          context.scale(.3 + opening * .7 - closing * .48, .5 + opening * .32 - closing * .2);
-          context.rotate(-.06 + sway * .002);
-          context.drawImage(blossom, -80, -84, 160, 160);
+          context.translate(headX, headY);
+          const maturity = ease((growth - .13) / .14);
+          context.scale(maturity, maturity);
+          drawSepals(growth > .76 ? 1 : .3);
+          if (growth < .37) drawBud(ease((growth - .23) / .14));
+          else if (growth < .6) {
+            const opening = ease((growth - .37) / .1);
+            const closing = ease((growth - .55) / .06);
+            if (opening < .9) drawBud(1);
+            context.save();
+            context.scale(.3 + opening * .7 - closing * .48, .5 + opening * .32 - closing * .2);
+            context.rotate(-.06 + sway * .002);
+            context.drawImage(blossom, -80, -84, 160, 160);
+            context.restore();
+          } else if (growth < .77) {
+            const white = growth > .68;
+            drawBud(ease((growth - .65) / .12), white);
+            if (!white) {
+              context.save();
+              context.globalAlpha = 1 - ease((growth - .6) / .08);
+              context.drawImage(blossom, -15, -40, 30, 21);
+              context.restore();
+            }
+          } else {
+            const opening = ease((growth - .77) / .21);
+            ellipse(context, 0, 0, 10, 7, '#9aae61');
+            for (let index = 0; index < 21; index += 1) circle(context, Math.sin(index * 2.399) * 8, Math.cos(index * 2.399) * 5, .7, '#5e794498');
+            if (flight < .55) {
+              context.save();
+              context.globalAlpha *= 1 - ease(flight / .55);
+              context.rotate(breath * .1 + tremble * .006);
+              context.scale((.38 + opening * .62) * (1 + breath * .07), (.22 + opening * .78) * (1 - breath * .05));
+              context.drawImage(puff, -80, -80 - (1 - opening) * 25, 160, 160);
+              context.restore();
+            }
+          }
           context.restore();
-        } else if (growth < .77) {
-          const white = growth > .68;
-          drawBud(ease((growth - .65) / .12), white);
-          if (!white) {
-            context.save();
-            context.globalAlpha = 1 - ease((growth - .6) / .08);
-            context.drawImage(blossom, -15, -40, 30, 21);
-            context.restore();
-          }
-        } else {
-          const opening = ease((growth - .77) / .21);
-          ellipse(context, 0, 0, 10, 7, '#9aae61');
-          for (let index = 0; index < 21; index += 1) circle(context, Math.sin(index * 2.399) * 8, Math.cos(index * 2.399) * 5, .7, '#5e794498');
-          if (flight < .55) {
-            context.save();
-            context.globalAlpha *= 1 - ease(flight / .55);
-            context.rotate(breath * .1 + tremble * .006);
-            context.scale((.38 + opening * .62) * (1 + breath * .07), (.22 + opening * .78) * (1 - breath * .05));
-            context.drawImage(puff, -80, -80 - (1 - opening) * 25, 160, 160);
-            context.restore();
-          }
         }
-        context.restore();
       }
     }
     context.restore();
@@ -850,6 +860,7 @@ export const createMeadow = (canvas) => {
     pixelRatio = nextRatio;
     canvas.width = background.width = Math.round(width * pixelRatio);
     canvas.height = background.height = Math.round(height * pixelRatio);
+    dandelion?.resize(width, height, pixelRatio);
     paintBackground();
     requestRender();
   };
@@ -901,10 +912,12 @@ export const createMeadow = (canvas) => {
       if (typeof next.flight === 'number') state.flight = clamp(next.flight);
       if (typeof next.breath === 'number') state.breath = clamp(next.breath);
       if (typeof next.motion === 'boolean') state.motion = next.motion;
+      dandelion?.setState(next);
       requestRender();
     },
     destroy: () => {
       destroyed = true;
+      dandelion?.destroy();
       cancelAnimationFrame(frame);
       observer.disconnect();
       document.removeEventListener('visibilitychange', onVisibility);

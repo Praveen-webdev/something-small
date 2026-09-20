@@ -192,6 +192,48 @@ stem bends where it is furthest from its root. Blooms tip as well as shift, so t
 rather than slide. Touching the water leaves expanding rings, and dragging leaves a trail
 of them spaced by distance rather than time. Reduced motion disables the whole field.
 
+## 8h. The dandelion alone is three-dimensional
+The plant is drawn in WebGL through three.js on a transparent canvas stacked over the
+painted meadow. Everything else — sky, hills, pond, lotuses, grass, and the seeds once
+they are in flight — stays in the 2D canvas underneath. The 3D layer sits at `z-index: -1`,
+above the meadow and below the paper grain, so the grain still lies across the whole
+picture.
+
+Three.js is vendored into `website/assets/vendor/` rather than loaded from a CDN, because
+the page CSP is `script-src 'self'` and deliberately stays that way. Hugo's `js.Build`
+tree-shakes it into the bundle. That costs about 500 KB minified, 139 KB over the wire —
+by far the largest thing on the page, and the one real price of this decision.
+
+Three things made 3D worth it, and all three are things the sprite could not do: the clock
+is a genuine sphere of seeds rather than a flat disc of drawn hairs; the flower opens by
+fanning several hundred real ray florets outward from the centre; and the seedhead empties
+in place as the wish flies, because each seed is an object that can simply stop being
+drawn.
+
+The stage map is unchanged. `stageOf` in `dandelion.js` reproduces the thresholds from
+`drawFlower` exactly — yellow opens `.37`, closes `.55-.61`, whitens `.68`, seedhead opens
+`.77-.98` — because DECISIONS 6 locks the chapter cut points to them. The plant is also
+built in the same design units and placed at the same base point, which is what keeps
+`meadow.head()` correct without change, and so the countdown still pins to the seedhead.
+
+Two curves had to be split apart that the 2D sprite had been able to leave joined. A ray
+floret reaches full length while the bud is still shut and only then fans out, so length
+and fan run off separate curves; driving both from one left the flower opening invisibly
+inside its own bud. Likewise the bud body has to yield faster than the thing emerging from
+it, in both directions.
+
+The 2D plant is not deleted. If the canvas is missing or WebGL is unavailable, `flat()` is
+true and `drawFlower` paints the original flower exactly as before.
+
+## 8i. Growth is sprung, not scrubbed
+Scroll sets a target; a critically damped spring follows it at 60fps on the 3D layer's own
+rAF loop, independent of the meadow's 30fps ambient loop. Wheel scrolling arrives in
+discrete jumps, and scrubbing the bloom straight off `window.scrollY` made those jumps
+visible in the flower. The spring settles in about 0.15s, which is short enough that the
+flower still feels directly under the reader's thumb.
+
+`prefers-reduced-motion` bypasses the spring entirely and snaps to the target.
+
 ## 9. Birthday beat — only at the end
 Everything before the flight stays universal. Sequenced under the signature, plain and
 tender: "Happy birthday, <name>." in serif italic, nothing more. The existing

@@ -1,11 +1,14 @@
 # Dandelion Wish
 
-- Standalone Hugo site with vanilla JavaScript and Canvas 2D. No npm dependencies or GSAP are required.
+- Standalone Hugo site with vanilla JavaScript. The meadow is Canvas 2D; the dandelion alone is WebGL through three.js. No npm install, no build step beyond Hugo, and no GSAP.
+- `website/assets/vendor/three.module.js` is a vendored, pinned copy of three.js r169. The CSP is `script-src 'self'`, so no CDN may be used; Hugo's `js.Build` tree-shakes the vendored module into the bundle. Replace the file to upgrade.
 - Run from this project directory: `hugo server --source website --config data/site.yaml --bind 127.0.0.1 --port 1313 --baseURL http://localhost:1313 --disableFastRender --renderToMemory`.
 - Build: `hugo --source website --config data/site.yaml --baseURL "$SITE_URL" --minify --printI18nWarnings --panicOnWarning`. Set `SITE_URL` to the actual HTTPS deployment origin, including any path prefix, before production builds. Output is `website/public/`.
 - Test: `bun test website/assets/breath.test.js`.
 - Configuration is `website/data/site.yaml`; always pass `--config data/site.yaml` relative to the Hugo source directory.
 - UI copy belongs in `website/i18n/en.yaml`; title and description belong in `website/content/_index.md`.
+- `website/assets/dandelion.js` draws the plant - rosette, stem, bracts, bud, ray florets and seedhead - in three.js on the transparent `#bloom` canvas stacked over `#meadow`. It runs its own 60fps loop and springs `growth` towards the value it is given, so the bloom is smooth even when scroll arrives in jumps. Its stage thresholds mirror `drawFlower` exactly and must stay in step with it; see DECISIONS 6 and 8h.
+- If WebGL is unavailable `createDandelion` returns null, `flat()` in meadow.js goes true, and the original 2D plant in `drawFlower` is painted instead. Keep both paths working.
 - `website/assets/meadow.js` paints cached scenery and controls botanical stages through `createMeadow(canvas).setState({ growth, flight, motion, breath })`, and exposes `landing()` and `head()` as the canvas positions the DOM pins itself to. The pond and its lotuses are drawn live each frame rather than baked into the cached backdrop, since they move; all their motion rides `time`, which only advances while `motion` is true.
 - `website/assets/main.js` coordinates scroll, countdown, flight and replay. `website/assets/sound.js` synthesises the wind, gust and chime through Web Audio; it fetches nothing. `website/assets/breath.js` handles opt-in, local-only microphone analysis and track cleanup.
 - Microphone access requires HTTPS or localhost. Wishes and audio are not persisted or transmitted. Always retain the tap fallback.
