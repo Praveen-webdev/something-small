@@ -910,6 +910,10 @@ export const createMeadow = (canvas, bloomCanvas) => {
       addRipple(x, y);
       requestRender();
     },
+    // True when the dandelion is being drawn in 3D, so the wish echo knows whether there
+    // is anything to hand its letters to.
+    spatial: () => !flat(),
+    dissolveWish: (detail) => Boolean(dandelion?.dissolveWish(detail)),
     setState: (next) => {
       if (typeof next.growth === 'number') state.growth = clamp(next.growth);
       if (typeof next.flight === 'number') state.flight = clamp(next.flight);

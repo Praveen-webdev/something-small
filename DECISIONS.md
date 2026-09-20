@@ -245,6 +245,28 @@ flower still feels directly under the reader's thumb.
 
 `prefers-reduced-motion` bypasses the spring entirely and snaps to the target.
 
+## 8j. Her words come apart into down
+The wish echo already drifted on the same wind as the seeds and faded. It now ends
+differently: at about three quarters of the way through the drift, the letters are sampled
+where they are standing and handed to the 3D layer as motes, and the DOM text fades out
+under them. What you see is the wish turning into down rather than dimming.
+
+The motes start the colour the text is written in and warm to cream as they lift, staggered
+so the change runs across the sentence rather than happening to all of it at once. Cream
+from the start was invisible against a cream sky, and ink becoming light is the idea
+anyway.
+
+All of the drift, stagger and fade happens in the vertex shader from one progress uniform.
+The CPU does nothing per frame, which is what keeps it smooth on top of everything else
+running during the flight.
+
+Nothing is stored. The string arrives as an argument to `dissolveWish`, is drawn once to an
+offscreen canvas, read back as positions, and dropped. It never leaves the page, so the
+privacy line still holds exactly as written.
+
+Under `prefers-reduced-motion`, or with no WebGL, `spatial()` is false and the original
+fade runs unchanged.
+
 ## 9. Birthday beat — only at the end
 Everything before the flight stays universal. Sequenced under the signature, plain and
 tender: "Happy birthday, <name>." in serif italic, nothing more. The existing

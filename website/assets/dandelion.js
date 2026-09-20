@@ -294,6 +294,55 @@ const spring = (current, target, velocity, omega, delta) => {
   return [current + next * delta, next];
 };
 
+const sampleText = (text, font, maxWidth, lineHeight) => {
+  const sheet = document.createElement('canvas');
+  const ink = sheet.getContext('2d', { willReadFrequently: true });
+  if (!ink) return null;
+  ink.font = font;
+  const lines = [];
+  let line = '';
+  text.split(/\s+/).forEach((word) => {
+    const next = line ? `${line} ${word}` : word;
+    if (line && ink.measureText(next).width > maxWidth) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = next;
+    }
+  });
+  if (line) lines.push(line);
+  if (!lines.length) return null;
+  const width = Math.ceil(Math.min(maxWidth, Math.max(...lines.map((entry) => ink.measureText(entry).width)))) + 6;
+  const height = Math.ceil(lines.length * lineHeight) + 6;
+  sheet.width = width;
+  sheet.height = height;
+  ink.font = font;
+  ink.textAlign = 'center';
+  ink.textBaseline = 'middle';
+  ink.fillStyle = '#000';
+  lines.forEach((entry, index) => ink.fillText(entry, width / 2, (index + .5) * lineHeight + 3));
+  const pixels = ink.getImageData(0, 0, width, height).data;
+  const points = [];
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (pixels[(y * width + x) * 4 + 3] > 80) points.push(x - width / 2, y - height / 2);
+    }
+  }
+  if (!points.length) return null;
+  // A long wish can run to many thousands of motes. Thin them evenly rather than letting
+  // the count run away.
+  const LIMIT = 4200;
+  const total = points.length / 2;
+  if (total <= LIMIT) return points;
+  const thinned = [];
+  const stride = total / LIMIT;
+  for (let index = 0; index < LIMIT; index += 1) {
+    const source = Math.floor(index * stride) * 2;
+    thinned.push(points[source], points[source + 1]);
+  }
+  return thinned;
+};
+
 export const createDandelion = (canvas) => {
   let renderer = null;
   try {
@@ -446,6 +495,59 @@ export const createDandelion = (canvas) => {
     });
   }
 
+  // Her words come apart into down and go with the seeds. Every mote carries its own
+  // seed value, so the whole drift, stagger and fade happens in the vertex shader and the
+  // CPU does nothing per frame - which is what keeps it smooth under everything else
+  // already running during the flight.
+  const wishMaterial = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    uniforms: {
+      uProgress: { value: 0 },
+      uSize: { value: 3 },
+      uDepth: { value: DEPTH },
+      uSpan: { value: new THREE.Vector2(240, 150) },
+      uColor: { value: new THREE.Color(0xfdfbec) },
+      uInk: { value: new THREE.Color(0x2c4634) },
+    },
+    vertexShader: `
+      attribute float aSeed;
+      uniform float uProgress;
+      uniform float uSize;
+      uniform float uDepth;
+      uniform vec2 uSpan;
+      varying float vFade;
+      varying float vLocal;
+      void main() {
+        float local = clamp((uProgress - aSeed * .3) / .7, 0., 1.);
+        vLocal = local;
+        float lift = local * local;
+        vec3 shifted = position;
+        shifted.x += lift * uSpan.x * (.55 + aSeed);
+        shifted.y += lift * uSpan.y * (.5 + aSeed * .9) + sin(local * 7. + aSeed * 12.) * 9.;
+        shifted.z += sin(local * 5. + aSeed * 9.) * 40.;
+        vFade = 1. - smoothstep(.38, 1., local);
+        vec4 viewed = modelViewMatrix * vec4(shifted, 1.);
+        // Ink is tight; down is fluffier. The mote swells a little as it changes.
+        gl_PointSize = uSize * (1. + local * .55) * (uDepth / max(1., -viewed.z));
+        gl_Position = projectionMatrix * viewed;
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 uColor;
+      uniform vec3 uInk;
+      varying float vFade;
+      varying float vLocal;
+      void main() {
+        float edge = smoothstep(.5, .08, length(gl_PointCoord - .5));
+        if (edge * vFade < .004) discard;
+        gl_FragColor = vec4(mix(uInk, uColor, smoothstep(0., .5, vLocal)), edge * vFade);
+      }
+    `,
+  });
+  let wishCloud = null;
+  let wishProgress = 1;
+
   // --- per-frame state ---------------------------------------------------------------
   const state = { growth: 0, flight: 0, breath: 0, motion: true, bend: 0 };
   const shown = { growth: 0, breath: 0, bend: 0 };
@@ -497,6 +599,18 @@ export const createDandelion = (canvas) => {
       canvas.style.opacity = fade === 1 ? '' : String(fade);
       lastFade = fade;
     }
+    if (wishCloud && wishProgress < 1) {
+      wishProgress = Math.min(1, wishProgress + delta / 3.4);
+      wishMaterial.uniforms.uProgress.value = wishProgress;
+      wishMaterial.uniforms.uSize.value = 3.6 * pixelRatio * (height / 800);
+      wishMaterial.uniforms.uSpan.value.set(width * .34, height * .2);
+      if (wishProgress >= 1) {
+        scene.remove(wishCloud);
+        wishCloud.geometry.dispose();
+        wishCloud = null;
+      }
+    }
+
     const headX = sway + stage.stem * 7 + breath * 10 + tremble + bend;
     const flying = state.flight > 0;
     flyMesh.visible = flying;
@@ -545,7 +659,7 @@ export const createDandelion = (canvas) => {
     }
 
     plant.visible = shown.growth > .008 && fade > .002;
-    if (!plant.visible) return flying;
+    if (!plant.visible) return flying || Boolean(wishCloud);
 
     // Leaves.
     const leafAmount = stage.leaves;
@@ -681,7 +795,9 @@ export const createDandelion = (canvas) => {
     const drew = paint(delta);
     if (drew || !blank) renderer.render(scene, camera);
     blank = !drew;
-    if (state.motion || Math.abs(state.growth - shown.growth) > .0002 || Math.abs(velocity.growth) > .0002) {
+    // The wish cloud has to keep its own frames coming: under reduced motion nothing else
+    // would ask for them, and the motes would hang in the air half dissolved.
+    if (state.motion || wishProgress < 1 || Math.abs(state.growth - shown.growth) > .0002 || Math.abs(velocity.growth) > .0002) {
       frame = requestAnimationFrame(render);
     }
   };
@@ -720,6 +836,38 @@ export const createDandelion = (canvas) => {
       camera.fov = 2 * Math.atan(height / 2 / DEPTH) * 180 / Math.PI;
       camera.updateProjectionMatrix();
       wake();
+    },
+    // Called once, as the echo of her wish starts to go. The text is sampled, turned into
+    // motes, and dropped; it is never held anywhere.
+    dissolveWish: ({ text, font, maxWidth, lineHeight, centreX, centreY, ink }) => {
+      if (lost || destroyed || !text) return false;
+      const points = sampleText(text, font, maxWidth, lineHeight);
+      if (!points) return false;
+      if (ink) wishMaterial.uniforms.uInk.value.set(ink);
+      const count = points.length / 2;
+      const positions = new Float32Array(count * 3);
+      const seeds = new Float32Array(count);
+      const scatter = randomGenerator(9133);
+      for (let index = 0; index < count; index += 1) {
+        positions[index * 3] = centreX + points[index * 2] - width / 2;
+        positions[index * 3 + 1] = height / 2 - (centreY + points[index * 2 + 1]);
+        positions[index * 3 + 2] = (scatter() - .5) * 70;
+        seeds[index] = scatter();
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 1));
+      if (wishCloud) {
+        scene.remove(wishCloud);
+        wishCloud.geometry.dispose();
+      }
+      wishCloud = new THREE.Points(geometry, wishMaterial);
+      wishCloud.frustumCulled = false;
+      scene.add(wishCloud);
+      wishProgress = 0;
+      wishMaterial.uniforms.uProgress.value = 0;
+      wake();
+      return true;
     },
     setState: (next) => {
       if (typeof next.growth === 'number') state.growth = clamp(next.growth);
