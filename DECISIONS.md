@@ -287,6 +287,29 @@ privacy line still holds exactly as written.
 Under `prefers-reduced-motion`, or with no WebGL, `spatial()` is false and the original
 fade runs unchanged.
 
+Revised: the words leave on the blow. The DOM echo used to fade in above the flower and
+stand there for three and a half seconds before the motes took over, so the wish visibly
+waited while the seeds had already gone. Now the 3D layer takes the words on the same frame
+the seeds let go. The echo is still laid out, but only to be measured; it is never painted.
+
+The words fly as a crisp sheet, drawn at device resolution, and a gust carries them
+downwind and up with the seeds from the first frame - hardest at the start, then gentler,
+with a slow ripple along the line and a little recession so they shrink as they leave. On
+the way the sentence comes apart in reading order, from about a second in to about three,
+and the motes go on to the landing seed exactly as before.
+
+The sheet and the motes are moved by one shared `carried` function in their vertex shaders,
+from the same uniforms, so a letter and its motes are always in the same place. Each patch
+of letter leaves the sheet as its motes appear. The ragged edge of the break-up is hashed
+from the CSS pixel the patch sits on, in both shaders, so the two agree to the pixel. A
+crossfade between two things moving differently would have smeared.
+
+Two changes followed from the words now being seen through the whole flight. The motes are
+colour-managed, so they really start in the colour the text is set in. Without that they
+came out near-black, and read as soot once they were in the air for longer. They also warm
+to cream within about a second of leaving, not three. The sheet is drawn over the plant,
+as the DOM text always was: on a wide screen it starts low enough to cross the clock.
+
 ## 8k. Light through the clock, and a shadow to stand in
 Two cheap things that do most of the work of making the plant look like it is in the
 meadow rather than on top of it.

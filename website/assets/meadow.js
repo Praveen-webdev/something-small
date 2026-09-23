@@ -100,10 +100,8 @@ export const createMeadow = (canvas, bloomCanvas) => {
     backdrop.fillRect(0, 0, width, height);
     const cloudScale = Math.max(.7, width / 1200);
     paintCloud(width * .07, height * .22, cloudScale * 1.55, 51);
-    paintCloud(width * .91, height * .34, cloudScale * 1.45, 913);
     paintCloud(width * .75, height * .12, cloudScale * .8, 325);
     paintCloud(width * .28, height * .48, cloudScale * .65, 789);
-    paintCloud(width * .97, height * .53, cloudScale * .75, 69);
 
     backdrop.fillStyle = '#adc4b36b';
     backdrop.beginPath();

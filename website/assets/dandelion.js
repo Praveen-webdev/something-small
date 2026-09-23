@@ -289,14 +289,25 @@ const stageOf = (growth) => {
   };
 };
 
+// Semi-implicit Euler is only stable while omega * step stays under about .83. The growth
+// and breath springs pass that at 30fps - which is where iOS Low Power Mode holds rAF -
+// and then ring without end: the stem flails flat across the meadow. Substepping keeps
+// every step well inside the limit whatever the frame rate.
 const spring = (current, target, velocity, omega, delta) => {
-  const next = velocity + ((target - current) * omega * omega - 2 * omega * velocity) * delta;
-  return [current + next * delta, next];
+  const steps = Math.ceil(omega * delta / .4);
+  const step = delta / steps;
+  for (let index = 0; index < steps; index += 1) {
+    velocity += ((target - current) * omega * omega - 2 * omega * velocity) * step;
+    current += velocity * step;
+  }
+  return [current, velocity];
 };
 
-const sampleText = (text, font, maxWidth, lineHeight) => {
-  const sheet = document.createElement('canvas');
-  const ink = sheet.getContext('2d', { willReadFrequently: true });
+// Wraps the wish and lays it out once, in CSS pixels. The same layout is drawn twice: at
+// device resolution for the sheet the words fly on, and at one pixel per CSS pixel to be
+// read back as motes, so the two cannot disagree about where any letter is.
+const layoutText = (text, font, maxWidth, lineHeight) => {
+  const ink = document.createElement('canvas').getContext('2d');
   if (!ink) return null;
   ink.font = font;
   const lines = [];
@@ -317,14 +328,29 @@ const sampleText = (text, font, maxWidth, lineHeight) => {
   // clipped the ends off.
   const width = Math.ceil(Math.max(...lines.map((entry) => ink.measureText(entry).width))) + 8;
   const height = Math.ceil(lines.length * lineHeight) + 6;
-  sheet.width = width;
-  sheet.height = height;
-  ink.font = font;
+  return { font, lines, lineHeight, width, height };
+};
+
+const drawText = (layout, density) => {
+  const sheet = document.createElement('canvas');
+  const ink = sheet.getContext('2d', { willReadFrequently: density === 1 });
+  if (!ink) return null;
+  sheet.width = Math.ceil(layout.width * density);
+  sheet.height = Math.ceil(layout.height * density);
+  ink.scale(density, density);
+  ink.font = layout.font;
   ink.textAlign = 'center';
   ink.textBaseline = 'middle';
-  ink.fillStyle = '#000';
-  lines.forEach((entry, index) => ink.fillText(entry, width / 2, (index + .5) * lineHeight + 3));
-  const pixels = ink.getImageData(0, 0, width, height).data;
+  ink.fillStyle = '#fff';
+  layout.lines.forEach((entry, index) => ink.fillText(entry, layout.width / 2, (index + .5) * layout.lineHeight + 3));
+  return { sheet, ink };
+};
+
+const sampleText = (layout) => {
+  const drawn = drawText(layout, 1);
+  if (!drawn) return null;
+  const { width, height } = drawn.sheet;
+  const pixels = drawn.ink.getImageData(0, 0, width, height).data;
   const points = [];
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
@@ -546,52 +572,99 @@ export const createDandelion = (canvas) => {
     });
   }
 
-  // Her words come apart into down and go with the seeds. Every mote carries its own
-  // seed value, so the whole drift, stagger and fade happens in the vertex shader and the
-  // CPU does nothing per frame - which is what keeps it smooth under everything else
-  // already running during the flight.
+  // Her words leave on the blow. From the first frame the whole sentence rides the gust
+  // out with the seeds, and on the way it comes apart into down, first word first, and
+  // the down goes in behind the one seed that is going to land.
+  //
+  // Two things are drawn: the words themselves, crisp, on a sheet; and a mote for every
+  // inked pixel of them. Both are moved by the same `carried` below from the same
+  // uniforms, so a letter and its motes are always in the same place, and the handover
+  // from one to the other is a swap in place rather than a crossfade between two things
+  // moving differently. Everything happens in the shaders from one progress uniform; the
+  // CPU does nothing per frame, which keeps it smooth under everything else in flight.
+  const wishUniforms = {
+    uProgress: { value: 0 },
+    uSpan: { value: new THREE.Vector2(240, 150) },
+    uCentre: { value: new THREE.Vector2() },
+    uRise: { value: 0 },
+    uCells: { value: new THREE.Vector2(1, 1) },
+    uInk: { value: new THREE.Color(0x2c4634) },
+  };
+  // When a patch of the sentence lets go: in reading order from progress .1, running the
+  // length of it over .24, with a ragged edge. The edge is hashed from the CSS pixel the
+  // patch sits on, so a letter on the sheet and the motes that stand for it agree to the
+  // pixel about when it goes.
+  const peel = `
+    uniform float uProgress;
+    uniform vec2 uCells;
+    float peel(vec2 uv) {
+      float grain = fract(sin(dot(floor(uv * uCells), vec2(12.9898, 78.233))) * 43758.5453);
+      return .1 + uv.x * .24 + grain * .06;
+    }
+  `;
+  // The gust takes the words hardest at the start, so they are already moving on the
+  // first frame, then carries them on more gently. It goes where the seeds go - downwind,
+  // up as far as the copy above allows, and away from the reader, so they shrink as they
+  // leave.
+  const carried = `
+    uniform vec2 uSpan;
+    uniform vec2 uCentre;
+    uniform float uRise;
+    vec3 carried(vec3 point) {
+      float gust = 1. - pow(1. - clamp(uProgress / .62, 0., 1.), 2.);
+      float lean = gust * -.045;
+      vec2 about = point.xy - uCentre;
+      about = vec2(about.x * cos(lean) - about.y * sin(lean), about.x * sin(lean) + about.y * cos(lean));
+      vec3 moved = vec3(uCentre + about, point.z);
+      // A slow ripple along the line, so it travels like something light rather than a
+      // card being slid across the sky.
+      moved.y += sin(point.x * .024 - uProgress * 26.) * 4. * gust;
+      return moved + vec3(uSpan.x * .5 * gust, uRise * gust, -380. * gust);
+    }
+  `;
+
   const wishMaterial = new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
     uniforms: {
-      uProgress: { value: 0 },
+      ...wishUniforms,
       uSize: { value: 3 },
       uDepth: { value: DEPTH },
-      uSpan: { value: new THREE.Vector2(240, 150) },
       uTarget: { value: new THREE.Vector3() },
       uColor: { value: new THREE.Color(0xfdfbec) },
-      uInk: { value: new THREE.Color(0x2c4634) },
     },
     vertexShader: `
       attribute float aSeed;
-      attribute float aOrder;
-      uniform float uProgress;
+      attribute vec2 aUv;
       uniform float uSize;
       uniform float uDepth;
-      uniform vec2 uSpan;
       uniform vec3 uTarget;
       varying float vFade;
       varying float vLocal;
+      ${peel}
+      ${carried}
       void main() {
-        // The sentence peels off in reading order, first word first.
-        float stagger = aOrder * .2 + aSeed * .14;
+        // Each mote appears exactly as the patch of letter it stands for is taken off the
+        // sheet, holds its place in the sentence for a moment, then goes.
+        float appears = peel(aUv);
+        float stagger = appears + .01 + aSeed * .07;
         float local = clamp((uProgress - stagger) / max(.12, 1. - stagger), 0., 1.);
         vLocal = local;
-        // Out on the wind with the rest of the seeds, then in behind the one that is
-        // going to land. The control point is where the wind would have taken it.
-        vec3 origin = position;
+        // Until it goes, it rides the gust with the rest of the sentence. After that it is
+        // out on the wind with the seeds, then in behind the one that is going to land.
+        vec3 origin = carried(position);
         vec3 control = origin + vec3(
-          uSpan.x * (.55 + aSeed * .7),
-          uSpan.y * (.45 + aSeed * .8),
+          uSpan.x * (.4 + aSeed * .6),
+          uSpan.y * (.35 + aSeed * .7),
           (aSeed - .5) * 120.
         );
         float t = local * local * (3. - 2. * local);
         vec3 drawn = mix(mix(origin, control, t), mix(control, uTarget, t), t);
-        drawn.y += sin(local * 9. + aSeed * 12.) * 7. * (1. - local);
-        vFade = 1. - smoothstep(.82, 1., local);
+        drawn.y += sin(local * 9. + aSeed * 12.) * 7. * local * (1. - local);
+        vFade = smoothstep(appears - .02, appears + .02, uProgress) * (1. - smoothstep(.82, 1., local));
         vec4 viewed = modelViewMatrix * vec4(drawn, 1.);
         // Ink is tight, down is fluffier, and it draws in again as it reaches the seed.
-        gl_PointSize = uSize * (1. + local * .5) * (1. - local * .4) * (uDepth / max(1., -viewed.z));
+        gl_PointSize = uSize * mix(.6, 1.5, sqrt(local)) * (1. - local * .4) * (uDepth / max(1., -viewed.z));
         gl_Position = projectionMatrix * viewed;
       }
     `,
@@ -603,15 +676,60 @@ export const createDandelion = (canvas) => {
       void main() {
         float edge = smoothstep(.5, .08, length(gl_PointCoord - .5));
         if (edge * vFade < .004) discard;
-        gl_FragColor = vec4(mix(uInk, uColor, smoothstep(0., .5, vLocal)), edge * vFade);
+        gl_FragColor = vec4(mix(uInk, uColor, smoothstep(0., .16, vLocal)), edge * vFade);
+        #include <colorspace_fragment>
       }
     `,
   });
+
+  // The words are drawn over the plant, the way the DOM text they replace always was: on a
+  // wide screen they start low enough to cross the clock, and must not be read through it.
+  const wordsMaterial = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    depthTest: false,
+    uniforms: {
+      ...wishUniforms,
+      uText: { value: null },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      uniform float uProgress;
+      ${carried}
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(carried(position), 1.);
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D uText;
+      uniform vec3 uInk;
+      varying vec2 vUv;
+      ${peel}
+      void main() {
+        float leaves = peel(vUv);
+        float shown = smoothstep(0., .025, uProgress) * (1. - smoothstep(leaves - .02, leaves + .02, uProgress));
+        float alpha = texture2D(uText, vUv).a * shown;
+        if (alpha < .004) discard;
+        gl_FragColor = vec4(uInk, alpha);
+        #include <colorspace_fragment>
+      }
+    `,
+  });
+  // The sheet and the motes together. Null whenever no wish is in the air.
   let wishCloud = null;
   let wishProgress = 1;
   // The words are on the seed's clock, not their own: they arrive exactly as it lands.
   let wishFrom = 0;
   const WISH_LANDS = .95;
+  const dropWish = () => {
+    if (!wishCloud) return;
+    scene.remove(wishCloud);
+    wishCloud.children.forEach((child) => child.geometry.dispose());
+    wordsMaterial.uniforms.uText.value?.dispose();
+    wordsMaterial.uniforms.uText.value = null;
+    wishCloud = null;
+  };
 
   // Everything that belongs to the plant itself, and so fades with it once the wish has
   // gone. Deliberately excludes the seeds in flight, the hero and the wish motes.
@@ -737,15 +855,11 @@ export const createDandelion = (canvas) => {
 
     if (wishCloud) {
       wishProgress = clamp((state.flight - wishFrom) / Math.max(.08, WISH_LANDS - wishFrom));
-      wishMaterial.uniforms.uProgress.value = wishProgress;
+      wishUniforms.uProgress.value = wishProgress;
+      wishUniforms.uSpan.value.set(width * .3, height * .17);
       wishMaterial.uniforms.uSize.value = 3.6 * pixelRatio * (height / 800);
-      wishMaterial.uniforms.uSpan.value.set(width * .3, height * .17);
       wishMaterial.uniforms.uTarget.value.copy(hero.position);
-      if (wishProgress >= 1) {
-        scene.remove(wishCloud);
-        wishCloud.geometry.dispose();
-        wishCloud = null;
-      }
+      if (wishProgress >= 1) dropWish();
     }
 
     plant.visible = shown.growth > .008 && fade > .002;
@@ -932,46 +1046,64 @@ export const createDandelion = (canvas) => {
       camera.updateProjectionMatrix();
       wake();
     },
-    // Called once, as the echo of her wish starts to go. The text is sampled, turned into
-    // motes, and dropped; it is never held anywhere.
-    dissolveWish: ({ text, font, maxWidth, lineHeight, centreX, centreY, ink }) => {
+    // Called once, on the blow, with where the words would stand and how they are set. The
+    // text is drawn, turned into a sheet and motes, and dropped; it is never held anywhere.
+    dissolveWish: ({ text, font, maxWidth, lineHeight, centreX, centreY, ceiling, ink }) => {
       if (lost || destroyed || !text) return false;
-      const points = sampleText(text, font, maxWidth, lineHeight);
-      if (!points) return false;
-      if (ink) wishMaterial.uniforms.uInk.value.set(ink);
+      const layout = layoutText(text, font, maxWidth, lineHeight);
+      const points = layout && sampleText(layout);
+      const drawn = points && drawText(layout, pixelRatio);
+      if (!drawn) return false;
+      dropWish();
+      if (ink) wishUniforms.uInk.value.set(ink);
+      const { width: across, height: down } = layout;
+      // Letters crossing the chapter copy read as neither. On a short or wide screen the
+      // echo's box starts inside the copy, so the words are set just under it instead,
+      // and the rise stops short of it, allowing for the lean and the ripple. The motes
+      // are specks, like the seeds, and are free to go behind it.
+      const above = typeof ceiling === 'number' ? ceiling : -Infinity;
+      const top = Math.max(centreY - down / 2, above + 10);
+      const centre = wishUniforms.uCentre.value.set(centreX - width / 2, height / 2 - (top + down / 2));
+      wishUniforms.uCells.value.set(across, down);
+      wishUniforms.uRise.value = Math.max(0, Math.min(height * .2, top - above - 22));
+
       const count = points.length / 2;
       const positions = new Float32Array(count * 3);
       const seeds = new Float32Array(count);
-      const order = new Float32Array(count);
+      const cells = new Float32Array(count * 2);
       const scatter = randomGenerator(9133);
-      let leftmost = Infinity;
-      let rightmost = -Infinity;
       for (let index = 0; index < count; index += 1) {
-        leftmost = Math.min(leftmost, points[index * 2]);
-        rightmost = Math.max(rightmost, points[index * 2]);
-      }
-      const across = Math.max(1, rightmost - leftmost);
-      for (let index = 0; index < count; index += 1) {
-        positions[index * 3] = centreX + points[index * 2] - width / 2;
-        positions[index * 3 + 1] = height / 2 - (centreY + points[index * 2 + 1]);
-        positions[index * 3 + 2] = (scatter() - .5) * 70;
+        // Each mote stands at the centre of the pixel it was read from, and knows where
+        // that pixel sits on the sheet.
+        const x = points[index * 2] + .5;
+        const y = points[index * 2 + 1] + .5;
+        positions[index * 3] = centre.x + x;
+        positions[index * 3 + 1] = centre.y - y;
         seeds[index] = scatter();
-        order[index] = (points[index * 2] - leftmost) / across;
+        cells[index * 2] = x / across + .5;
+        cells[index * 2 + 1] = .5 - y / down;
       }
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      geometry.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 1));
-      geometry.setAttribute('aOrder', new THREE.BufferAttribute(order, 1));
-      if (wishCloud) {
-        scene.remove(wishCloud);
-        wishCloud.geometry.dispose();
-      }
-      wishCloud = new THREE.Points(geometry, wishMaterial);
-      wishCloud.frustumCulled = false;
+      const motes = new THREE.BufferGeometry();
+      motes.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      motes.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 1));
+      motes.setAttribute('aUv', new THREE.BufferAttribute(cells, 2));
+
+      // The sheet is built where the words stand, not moved there, so `carried` sees the
+      // same coordinates for a letter as for its motes. It is cut into columns so the
+      // ripple can travel along it.
+      const plane = new THREE.PlaneGeometry(across, down, Math.ceil(across / 8), 1);
+      plane.translate(centre.x, centre.y, 0);
+      wordsMaterial.uniforms.uText.value = new THREE.CanvasTexture(drawn.sheet);
+
+      wishCloud = new THREE.Group();
+      [new THREE.Mesh(plane, wordsMaterial), new THREE.Points(motes, wishMaterial)].forEach((child) => {
+        child.frustumCulled = false;
+        wishCloud.add(child);
+      });
       scene.add(wishCloud);
       wishProgress = 0;
       wishFrom = state.flight;
-      wishMaterial.uniforms.uProgress.value = 0;
+      wishUniforms.uProgress.value = 0;
       wake();
       return true;
     },

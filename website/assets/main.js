@@ -42,7 +42,6 @@ let microphoneMessage = '';
 let entered = false;
 let revealed = false;
 let echoAnimation = null;
-let echoHandoff = 0;
 let spotTimer = 0;
 let swellFrame = 0;
 let replaying = false;
@@ -90,8 +89,6 @@ const stopMicrophone = () => {
 };
 
 const clearEcho = () => {
-  clearTimeout(echoHandoff);
-  echoHandoff = 0;
   echoAnimation?.cancel();
   echoAnimation = null;
   elements.wishEcho.hidden = true;
@@ -228,46 +225,43 @@ const animateFlight = (timestamp) => {
   else flightFrame = requestAnimationFrame(animateFlight);
 };
 
-// The words drift, then come apart. The letters are sampled where they are standing and
-// handed to the 3D layer as motes that go on with the seeds, while the DOM text fades
-// under them - so what you see is the wish turning into down rather than dimming.
+// The echo is laid out where the words should stand and measured, and the 3D layer takes
+// them from there on the same frame, as a sheet that rides the gust and comes apart into
+// down. The element itself is never painted on this path.
 const handOffWish = (wish) => {
-  echoHandoff = 0;
   const style = getComputedStyle(elements.wishEcho);
   const rect = elements.wishEcho.getBoundingClientRect();
   const bounds = elements.meadow.getBoundingClientRect();
   const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.5;
-  meadow?.dissolveWish({
+  // The chapter copy the words must keep out of, where it stands over them.
+  const copy = elements.storyCopy.getBoundingClientRect();
+  const beneath = copy.left < rect.right && copy.right > rect.left;
+  return Boolean(meadow?.dissolveWish({
     text: wish,
     font: `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`,
     maxWidth: rect.width,
     lineHeight,
     centreX: rect.left + rect.width / 2 - bounds.left,
     centreY: rect.top + rect.height / 2 - bounds.top,
+    ceiling: beneath ? copy.bottom - bounds.top : undefined,
     ink: style.color,
-  });
+  }));
 };
 
-// Her words ride the seeds and dissolve with them: carried, then let go. The text never
-// leaves this variable, so "never saved or sent" stays literally true.
+// Her words leave with the seeds on the blow, not after it, and come apart into down on
+// the way: carried, then let go. The text never leaves this variable, so "never saved or
+// sent" stays literally true.
 const echoWish = (wish) => {
   if (!wish) return;
   elements.wishEcho.textContent = wish;
   elements.wishEcho.hidden = false;
-  const spatial = Boolean(meadow?.spatial?.()) && !reducedMotion.matches;
+  if (!reducedMotion.matches && meadow?.spatial?.() && handOffWish(wish)) {
+    clearEcho();
+    return;
+  }
   if (reducedMotion.matches) {
     echoAnimation = elements.wishEcho.animate([{ opacity: 0 }, { opacity: 0.85, offset: 0.25 }, { opacity: 0.85, offset: 0.7 }, { opacity: 0 }], { duration: 1600, easing: 'ease-out' });
     // No drift under reduced motion; the fade alone carries it.
-  } else if (spatial) {
-    // The DOM text only has to carry the first half of the journey now. It drifts on the
-    // same wind, and the motes pick the words up from where it leaves them.
-    echoAnimation = elements.wishEcho.animate([
-      { opacity: 0, translate: '-1.6rem 1.4rem', rotate: '-1.5deg' },
-      { opacity: 0.9, translate: '0 0', rotate: '0deg', offset: 0.32 },
-      { opacity: 0.85, translate: '2.3rem -1.2rem', rotate: '1deg', offset: 0.78 },
-      { opacity: 0, translate: '3.3rem -1.7rem', rotate: '1.3deg' },
-    ], { duration: 4600, easing: 'cubic-bezier(.25,.6,.3,1)' });
-    echoHandoff = window.setTimeout(() => handOffWish(wish), 3600);
   } else {
     // Carried on the same wind as the seeds: they leave rightward and rising, so the
     // words do too. Straight up read as the text escaping the picture rather than
