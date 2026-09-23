@@ -625,6 +625,11 @@ export const createMeadow = (canvas, bloomCanvas) => {
   const padNodes = pads.map(() => ({ x: 0, y: 0, vx: 0, vy: 0 }));
   const bloomNodes = blooms.map(() => ({ x: 0, y: 0, vx: 0, vy: 0 }));
   const stemNode = { x: 0, y: 0, vx: 0, vy: 0 };
+  // The phone moving pushes the same springs, and the water too, which sloshes: its light
+  // slides across the surface and back. `jolt` is the latest push, see `shake`.
+  const waterNode = { x: 0, y: 0, vx: 0, vy: 0 };
+  const jolt = { x: 0, y: 0, at: -Infinity };
+  let lastSwell = -Infinity;
 
   const spring = (node, forceX, forceY, step, stiffness, damping, limit) => {
     node.vx += (forceX - node.x * stiffness - node.vx * damping) * step;
@@ -693,17 +698,29 @@ export const createMeadow = (canvas, bloomCanvas) => {
     // springs past their rest position when the page comes back.
     const step = Math.min(2.2, delta / 16.67);
     if (!state.motion) {
-      [...padNodes, ...bloomNodes, stemNode].forEach((node) => { node.x = 0; node.y = 0; node.vx = 0; node.vy = 0; });
+      [...padNodes, ...bloomNodes, stemNode, waterNode].forEach((node) => { node.x = 0; node.y = 0; node.vx = 0; node.vy = 0; });
       return;
     }
+    // A jolt only pushes while the phone is still reporting them; when the events stop,
+    // so does the push, and everything settles.
+    const live = performance.now() - jolt.at < 160;
+    const joltX = live ? jolt.x : 0;
+    const joltY = live ? jolt.y : 0;
+    // Each pad and bloom takes the jolt a little differently, or the whole surface would
+    // slide about as one sheet.
     spots.pads.forEach((pad, index) => {
       const [forceX, forceY] = pushFrom(pad.x, pad.y, pad.radius + 52, .8);
-      spring(padNodes[index], forceX, forceY * .45, step, .062, .3, 15);
+      const give = .05 + (index % 3) * .012;
+      spring(padNodes[index], forceX + joltX * give, (forceY + joltY * give) * .45, step, .062, .3, 15);
     });
     spots.blooms.forEach((bloom, index) => {
       const [forceX, forceY] = pushFrom(bloom.x, bloom.y - bloom.size * .9, bloom.size + 56, .7);
-      spring(bloomNodes[index], forceX, forceY * .3, step, .05, .28, 17);
+      const give = .045 + (index % 2) * .015;
+      spring(bloomNodes[index], forceX + joltX * give, (forceY + joltY * give) * .3, step, .05, .28, 17);
     });
+    // Softer and far less damped than anything floating on it, so the water keeps
+    // rocking for a few beats after the phone is still.
+    spring(waterNode, joltX * .07, joltY * .04, step, .028, .09, 16);
 
     let stemForce = 0;
     const scale = height / 800 * (width < 600 ? .92 : 1);
@@ -724,6 +741,7 @@ export const createMeadow = (canvas, bloomCanvas) => {
         stemForce = awayX / Math.max(distance, 8) * 1.7 * falloff * leverage * (pointer.pressed ? 1.7 : 1);
       }
     }
+    if (stemHeight > 8) stemForce += joltX * .085;
     spring(stemNode, stemForce, 0, step, .046, .26, 24);
   };
 
@@ -742,7 +760,9 @@ export const createMeadow = (canvas, bloomCanvas) => {
     context.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
     context.clip();
 
-    const sheen = context.createRadialGradient(cx + rx * .3, cy - ry * .5, 0, cx + rx * .3, cy - ry * .5, rx * .95);
+    const sheenX = cx + rx * .3 + waterNode.x * 1.6;
+    const sheenY = cy - ry * .5 + waterNode.y * .6;
+    const sheen = context.createRadialGradient(sheenX, sheenY, 0, sheenX, sheenY, rx * .95);
     sheen.addColorStop(0, '#fdfbe654');
     sheen.addColorStop(1, '#fdfbe600');
     ellipse(context, cx, cy, rx, ry, sheen);
@@ -752,7 +772,7 @@ export const createMeadow = (canvas, bloomCanvas) => {
       const node = bloomNodes[index];
       context.save();
       context.globalAlpha = .16;
-      context.translate(bloom.x + node.x * .6 + Math.sin(time * .0016 + index) * 2.2 * unit, bloom.y + node.y * .6);
+      context.translate(bloom.x + node.x * .6 + waterNode.x * .35 + Math.sin(time * .0016 + index) * 2.2 * unit, bloom.y + node.y * .6);
       context.scale(1, -.44);
       drawLotus(0, -bloom.size * 1.3, bloom.size, bloom.sway + node.x * .012);
       context.restore();
@@ -785,10 +805,12 @@ export const createMeadow = (canvas, bloomCanvas) => {
     for (let index = 0; index < 6; index += 1) {
       const drift = ((time * .00004 + index / 6) % 1) * 2 - 1;
       const span = rx * Math.sqrt(Math.max(0, 1 - (drift * .84) ** 2)) * .5;
-      const glintY = cy + drift * ry * .84;
+      const glintY = cy + drift * ry * .84 + waterNode.y * .3;
+      // Rows swing by different amounts, so a slosh reads as a wave across the surface.
+      const slosh = waterNode.x * (.55 + (index % 3) * .2);
       context.beginPath();
-      context.moveTo(cx - span + Math.sin(time * .0007 + index) * 4 * unit, glintY);
-      context.lineTo(cx + span + Math.sin(time * .0009 + index) * 4 * unit, glintY);
+      context.moveTo(cx - span + slosh + Math.sin(time * .0007 + index) * 4 * unit, glintY);
+      context.lineTo(cx + span + slosh + Math.sin(time * .0009 + index) * 4 * unit, glintY);
       context.strokeStyle = `rgba(255,253,238,${.1 + Math.sin(time * .0012 + index) * .06})`;
       context.lineWidth = unit;
       context.stroke();
@@ -908,6 +930,23 @@ export const createMeadow = (canvas, bloomCanvas) => {
     poke: (x, y) => {
       addRipple(x, y);
       requestRender();
+    },
+    // The phone itself moving: `x` and `y` push across and down the screen, `energy` is
+    // how hard it is moving at all. A brisk shake also sends rings across the pond, more
+    // often the harder it is shaken.
+    shake: (x, y, energy) => {
+      if (!state.motion) return;
+      jolt.x += (x - jolt.x) * .5;
+      jolt.y += (y - jolt.y) * .5;
+      const now = performance.now();
+      jolt.at = now;
+      if (energy > 3 && now - lastSwell > Math.max(140, 1100 / energy)) {
+        lastSwell = now;
+        const { cx, cy, rx, ry } = pondGeometry();
+        const angle = Math.random() * Math.PI * 2;
+        const reach = Math.sqrt(Math.random()) * .7;
+        addRipple(cx + Math.cos(angle) * rx * reach, cy + Math.sin(angle) * ry * reach);
+      }
     },
     // True when the dandelion is being drawn in 3D, so the wish echo knows whether there
     // is anything to hand its letters to.

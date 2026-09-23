@@ -44,7 +44,8 @@ a consequence, because there isn't one.
 
 Rules: **`begin` is never blocked.** Both boxes are reset by JS on every load, since
 browsers restore form state across a soft reload and the site must always start fresh.
-The `begin` tap doubles as the gesture that unlocks Web Audio.
+The `begin` tap doubles as the gesture that unlocks Web Audio, and as the one iOS needs
+before it will ask for the phone's motion (8l).
 
 ## 4. Chrome
 Removed: the "Make a wish" shortcut, "A MOMENT OF QUIET", "THE WISHING MEADOW",
@@ -327,6 +328,33 @@ the clock and sat entirely hidden behind it.
 The same sprite, dark and squashed, is the shadow the rosette stands in. It leans with the
 stem, which the painted ellipse it replaces could not do. That ellipse is still there
 behind `flat()` for the 2D path.
+
+## 8l. The meadow answers the phone moving
+Shaking, twisting or turning the phone pushes the meadow the way a finger does. The stem
+swings, the pads and lotuses rock, the light on the pond slides across it and back, and a
+brisk shake sends rings over the water, more often the harder it is shaken. When the phone
+is still, everything settles.
+
+It rides the springs from 8g rather than adding its own. `shake.js` turns each
+`devicemotion` reading into a push in screen coordinates - acceleration across and down,
+plus a twist in the plane of the screen and a turn about its upright, weighted so a brisk
+twist lands about level with a brisk shake - and `meadow.shake` adds that push to every
+spring. Each pad and bloom takes a slightly different share, or the surface slid about as
+one sheet. The water has a spring of its own, softer and barely damped, so it keeps
+rocking for a few beats after everything floating on it has stopped. The push only counts
+while readings keep arriving, so nothing can be left leaning if the sensor goes quiet.
+Readings are turned into pushes and dropped; nothing is kept or sent.
+
+The permission is asked at the consent. iOS gives no motion data until it has asked, and
+will ask only from inside a tap, so `begin` on the threshold requests it, in the same tap
+that already unlocks the audio. The system prompt names the site and "motion and
+orientation", nothing about what the meadow holds, so it gives nothing away. A refusal
+costs nothing: the meadow simply does not answer the phone. Android asks nothing, and a
+desktop never sends a reading.
+
+Like the microphone, it needs HTTPS or localhost. Opening the dev server on a phone over
+the LAN address will not show it. Reduced motion turns it off with the rest of the
+touch field.
 
 ## 9. Birthday beat — only at the end
 Everything before the flight stays universal. Sequenced under the signature, plain and

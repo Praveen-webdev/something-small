@@ -1,6 +1,7 @@
 import { createMeadow } from './meadow.js';
 import { createBreathListener } from './breath.js';
 import { createSound } from './sound.js';
+import { listenForShake } from './shake.js';
 
 const elements = Object.fromEntries([
   'journey', 'viewport', 'meadow', 'bloom', 'story-copy', 'eyebrow', 'title-line', 'title-accent',
@@ -479,11 +480,13 @@ const setMuted = (value) => {
 
 // The threshold ticks steer nothing. They are a settling-in ritual, and everyone gets
 // the identical experience whatever they answer, so no one can accidentally opt out of
-// the best version of this. `begin` also supplies the gesture audio needs to start.
+// the best version of this. `begin` also supplies the gesture audio needs to start, and
+// the one iOS needs before it will ask to let the phone's movement reach the meadow.
 const begin = () => {
   if (entered) return;
   entered = true;
   sound?.unlock();
+  if (meadow) listenForShake(meadow.shake);
   setMuted(false);
   elements.soundToggle.hidden = !sound;
   document.body.classList.remove('held');
