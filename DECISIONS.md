@@ -223,6 +223,19 @@ and fan run off separate curves; driving both from one left the flower opening i
 inside its own bud. Likewise the bud body has to yield faster than the thing emerging from
 it, in both directions.
 
+Nothing in the head switches on or off between one frame and the next; scrolled slowly,
+any such switch reads as a glitch. The yellow at the tip of the bud is the flower that then
+opens, so the opening carries on from it rather than starting again from shut at `.37`. The
+receptacle spreads with the florets and then with the clock instead of appearing at full
+size, which had shown as a ring from nowhere under a bud that had barely parted. The glow
+turns from gold to white over the start of the clock rather than at a threshold.
+
+The clock comes out of the top of the shut head first, as a real one does. Each seed starts
+packed inside the silver bud, shaped to it - long under its crown, short at its narrow
+base - and the bud loses height ahead of width as it gives way, so the down is uncovered
+from the top down. Before, every seed started the same length around the base of the head,
+and the lower ones stood out of the bud from the first frame as a collar of fluff under it.
+
 The seeds fly in 3D as well. They cannot stay in the head's group - it is scaled by
 maturity and turns with the stem tip - so released seeds get their own instanced mesh in
 world space and cross the screen freely. Each one tumbles on its own axis and carries its

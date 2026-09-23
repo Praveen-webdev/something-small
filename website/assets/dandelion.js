@@ -277,12 +277,20 @@ const createStem = (rings, radial) => {
 const stageOf = (growth) => {
   const open = ease((growth - .37) / .1);
   const close = ease((growth - .55) / .06);
+  const bud = ease((growth - .23) / .14);
+  // The yellow showing at the tip of the bud is the same flower that then opens, so the
+  // opening carries on from it. Starting the opening from nothing at .37 snapped the bud
+  // shut again for a frame, just after it had begun to show colour. The peek hands over
+  // to the opening gently - the power keeps the sum from ever dipping - and is gone by
+  // the time the florets fan, so the flower still opens along its old curve.
+  const peek = bud * .16 * (1 - open) ** 6;
   return {
     stem: ease((growth - .035) / .28),
     leaves: ease((growth - .01) / .21),
     maturity: ease((growth - .13) / .14),
-    bud: ease((growth - .23) / .14),
+    bud,
     bloom: open * (1 - close),
+    florets: (open + peek) * (1 - close),
     reclose: ease((growth - .65) / .12),
     whiten: ease((growth - .655) / .085),
     puff: ease((growth - .77) / .21),
@@ -493,6 +501,11 @@ export const createDandelion = (canvas) => {
   const budMaterial = new THREE.MeshStandardMaterial({ color: 0x7e9c48, roughness: .78, metalness: 0 });
   const budBody = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 14), budMaterial);
   crown.add(budBody);
+  // The bud shut at full size. The clock is packed inside exactly this shape, so it can
+  // be uncovered as the bud gives way rather than poking out through the sides of it.
+  const BUD_WIDTH = 10.5;
+  const BUD_HEIGHT = 17;
+  const BUD_LIFT = 13;
   const budGreen = new THREE.Color(0x7e9c48);
   const budSilver = new THREE.Color(0xdedbc1);
 
@@ -563,9 +576,19 @@ export const createDandelion = (canvas) => {
     const level = (index + .5) / SEEDS;
     const y = mix(-.42, 1, level);
     const ring = Math.sqrt(Math.max(0, 1 - y * y));
+    // How far this seed's direction runs before it meets the skin of the shut bud, which
+    // stands much taller above the head than it reaches out to the side. Every seed starts
+    // well inside that, umbrella and all, so nothing shows until the bud gives way.
+    const a = ring * ring / (BUD_WIDTH * BUD_WIDTH) + y * y / (BUD_HEIGHT * BUD_HEIGHT);
+    const b = -2 * y * BUD_LIFT / (BUD_HEIGHT * BUD_HEIGHT);
+    const c = BUD_LIFT * BUD_LIFT / (BUD_HEIGHT * BUD_HEIGHT) - 1;
+    const skin = (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a);
     seeds.push({
       direction: new THREE.Vector3(Math.cos(index * GOLDEN_ANGLE) * ring, y, Math.sin(index * GOLDEN_ANGLE) * ring),
-      delay: level * .12 + random() * .1,
+      tucked: Math.max(1, skin * .68 - 3.2),
+      // The down pushes out through the top of the closed head first, the way a clock
+      // really comes out. Bottom first left the silver bud sitting on a collar of fluff.
+      delay: (1 - level) * .12 + random() * .1,
       length: .88 + random() * .24,
       leaves: random(),
       phase: random() * Math.PI * 2,
@@ -850,7 +873,7 @@ export const createDandelion = (canvas) => {
       halo.position.set(headWorldX, headWorldY, headWorldZ - 34 * scale);
       halo.scale.set(reach, reach, 1);
       haloMaterial.uniforms.uAlpha.value = glow;
-      haloMaterial.uniforms.uColor.value.copy(stage.puff > .3 ? haloWhite : haloGold);
+      haloMaterial.uniforms.uColor.value.copy(haloGold).lerp(haloWhite, ease(stage.puff / .3));
     }
 
     if (wishCloud) {
@@ -904,8 +927,6 @@ export const createDandelion = (canvas) => {
     crown.quaternion.copy(quaternion).multiply(new THREE.Quaternion().setFromAxisAngle(axis.set(1, 0, 0), tilt));
     if (!crown.visible) return true;
 
-    receptacle.visible = stage.puff > .02 || stage.bloom > .02;
-
     // Bracts: closed over the bud, flared under the open flower, reflexed hard down the
     // stem once the clock is out.
     const flare = Math.max(stage.bloom * .8, ease((shown.growth - .745) / .075));
@@ -922,8 +943,7 @@ export const createDandelion = (canvas) => {
     bractMesh.instanceMatrix.needsUpdate = true;
 
     // Ray florets.
-    const budShow = shown.growth < .37 ? stage.bud : 0;
-    const bloom = Math.max(stage.bloom, budShow * .16);
+    const bloom = stage.florets;
     floretMesh.visible = bloom > .004 && stage.puff < .02;
     if (floretMesh.visible) {
       for (let index = 0; index < FLORETS; index += 1) {
@@ -964,7 +984,7 @@ export const createDandelion = (canvas) => {
         const reach = mix(3.2, 8.4, local);
         position.copy(axis).multiplyScalar(reach);
         quaternion.setFromUnitVectors(UP, axis);
-        const length = mix(14, 56 * seed.length, local) * mix(1, 1.06, gust);
+        const length = mix(seed.tucked, 56 * seed.length, local) * mix(1, 1.06, gust);
         scaleVector.set(length, length, length);
         matrix.compose(position, quaternion, scaleVector);
         seedMesh.setMatrixAt(index, matrix);
@@ -974,14 +994,23 @@ export const createDandelion = (canvas) => {
 
     // The closed head, both before the flower and again after it. It whitens through the
     // stretch where the 2D layer used to swap a yellow bud for a white one.
-    const closed = clamp(1 - bloom * 1.7) * (1 - clamp(puff * 2.4));
+    // For the clock it opens from the top, losing height ahead of width, so the down
+    // tucked under its crown is uncovered first.
+    const shut = clamp(1 - bloom * 1.7);
+    const giving = 1 - clamp(puff * 2.4);
+    const closed = shut * giving;
+    const tall = closed * giving;
     budBody.visible = closed > .02;
     if (budBody.visible) {
-      budBody.scale.set(mix(6.5, 10.5, closed), mix(4, 17, closed), mix(6.5, 10.5, closed));
-      budBody.position.y = mix(2, 13, closed);
+      budBody.scale.set(mix(6.5, BUD_WIDTH, closed), mix(4, BUD_HEIGHT, tall), mix(6.5, BUD_WIDTH, closed));
+      budBody.position.y = mix(2, BUD_LIFT, tall);
       budMaterial.color.copy(budGreen).lerp(budSilver, stage.whiten * (1 - puff));
     }
-    receptacle.scale.setScalar(mix(1, .62, puff));
+    // The receptacle is the floor the florets stand on, and later the dome the seeds do.
+    // It spreads out with them from inside the bud. Switched on at full size it stood
+    // proud of a bud that had barely begun to part, and read as a ring appearing from
+    // nowhere under it - once as the flower opened, and again as the clock did.
+    receptacle.scale.setScalar(mix(.3, 1, ease(bloom)) + .32 * ease(clamp(puff * 2.4)));
     return true;
   };
 
