@@ -4,6 +4,7 @@
 - `website/assets/vendor/three.module.js` is a vendored, pinned copy of three.js r169. The CSP is `script-src 'self'`, so no CDN may be used; Hugo's `js.Build` tree-shakes the vendored module into the bundle. Replace the file to upgrade.
 - Run from this project directory: `hugo server --source website --config data/site.yaml --bind 127.0.0.1 --port 1313 --baseURL http://localhost:1313 --disableFastRender --renderToMemory`.
 - Build: `hugo --source website --config data/site.yaml --baseURL "$SITE_URL" --minify --printI18nWarnings --panicOnWarning`. Set `SITE_URL` to the actual HTTPS deployment origin, including any path prefix, before production builds. Output is `website/public/`.
+- Deploy: `.github/workflows/pages.yml` tests, builds and publishes to GitHub Pages on every push to `main`, taking `--baseURL` from `actions/configure-pages`, so `SITE_URL` never needs setting there. Its `HUGO_VERSION` is pinned; bump it with the local Hugo. The repository's Pages source must be set to "GitHub Actions". Every URL in templates must stay a `RelPermalink`/`Permalink` and scripts must not use root-absolute paths, because project Pages serve under a `/<repo>/` prefix.
 - Test: `bun test website/assets/breath.test.js`.
 - Configuration is `website/data/site.yaml`; always pass `--config data/site.yaml` relative to the Hugo source directory.
 - UI copy belongs in `website/i18n/en.yaml`; title and description belong in `website/content/_index.md`.
