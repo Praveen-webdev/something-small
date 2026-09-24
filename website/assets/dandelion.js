@@ -616,12 +616,16 @@ export const createDandelion = (canvas) => {
   // When a patch of the sentence lets go: in reading order from progress .1, running the
   // length of it over .24, with a ragged edge. The edge is hashed from the CSS pixel the
   // patch sits on, so a letter on the sheet and the motes that stand for it agree to the
-  // pixel about when it goes.
+  // pixel about when it goes. The hash is arithmetic only: `sin` of a large argument is
+  // not computed alike by the vertex and fragment stages on every GPU, which would pull
+  // a letter and its motes apart.
   const peel = `
     uniform float uProgress;
     uniform vec2 uCells;
     float peel(vec2 uv) {
-      float grain = fract(sin(dot(floor(uv * uCells), vec2(12.9898, 78.233))) * 43758.5453);
+      vec3 cell = fract(floor(uv * uCells).xyx * .1031);
+      cell += dot(cell, cell.yzx + 33.33);
+      float grain = fract((cell.x + cell.y) * cell.z);
       return .1 + uv.x * .24 + grain * .06;
     }
   `;

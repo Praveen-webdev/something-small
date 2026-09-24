@@ -32,15 +32,19 @@ export const listenForShake = (onShake) => {
     const across = x * cos - y * sin;
     const down = -(x * sin + y * cos);
     const rate = event.rotationRate || {};
+    const alpha = rate.alpha || 0;
+    const beta = rate.beta || 0;
+    const gamma = rate.gamma || 0;
     // Twisting in the plane of the screen, and turning about its upright.
-    const twist = rate.alpha || 0;
-    const turn = (rate.beta || 0) * sin + (rate.gamma || 0) * cos;
+    const twist = alpha;
+    const turn = beta * sin + gamma * cos;
     // Rotation is in degrees a second and acceleration in m/s^2; the weights bring a brisk
-    // twist level with a brisk shake.
+    // twist level with a brisk shake. How hard it is moving counts every axis, so no turn
+    // of the phone goes unanswered whichever axis a browser reports it on.
     onShake(
       -across + twist * .035 - turn * .02,
       -down,
-      Math.hypot(x, y, z || 0) + Math.hypot(twist, turn) * .012,
+      Math.hypot(x, y, z || 0) + Math.hypot(alpha, beta, gamma) * .012,
     );
   };
 

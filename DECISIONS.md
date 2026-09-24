@@ -366,13 +366,38 @@ costs nothing: the meadow simply does not answer the phone. Android asks nothing
 desktop never sends a reading.
 
 Like the microphone, it needs HTTPS or localhost. Opening the dev server on a phone over
-the LAN address will not show it. Reduced motion turns it off with the rest of the
-touch field.
+the LAN address will not show it. Under reduced motion the meadow ignores movement with the
+rest of the touch field, so the permission is not asked for at all.
+
+## 8m. Sunflowers in the meadow
+She loves sunflowers, so they stand in the meadow from the first frame: four small ones
+far off on the right of the horizon and a tall clump in the near left corner. They are
+scenery, not a hint: nothing about them says dandelion, wish or birthday, so the blackout
+in 1 holds. The end card is where they are explained (9).
+
+They are placed clear of everything that moves or asks for a tap - the plant and its
+seedhead, the pond, the chapter dots, the wish controls, and the ring around the spot the
+seed lands on - on a phone, a desktop and a short phone. In landscape the plant stands to
+the right, so the far ones move left of the landing spot and the near clump crosses to
+the right-hand corner.
+
+Every head turns to face the sun the backdrop is lit from, and is drawn a little
+foreshortened because it is looking up and away at it. The head is one pre-drawn sprite,
+the way the blossom and the puff are, so each frame only stamps it. Like the lotuses they
+are painted live rather than baked into the backdrop, because they move: a breeze on
+`time`, and a spring each that a finger or the phone moving pushes, as in 8g and 8l.
 
 ## 9. Birthday beat — only at the end
 Everything before the flight stays universal. Sequenced under the signature, plain and
 tender: "Happy birthday, <name>." in serif italic, nothing more. The existing
 "May your wishes come true" stays above it. Name lives as a single config value.
+
+Two lines now come before it and say what the sunflowers were: "The dandelion was for the
+wish." and "The sunflowers are for you." They are not tied to the name, so they show even
+while it is unset. The wordmark arrives at +350ms, the lines at +900ms and +1500ms, and the
+greeting at +2300ms, so the name is still the last thing to land and is in place before the
+replay pulse at 3.4s. In landscape the end card has to clear the pond, so the two lines run
+together as one.
 
 ## 10. Sound — synthesised now, swappable later
 Web Audio, no files, no network, no CSP change. A low wind bed that swells with growth,

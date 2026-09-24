@@ -16,6 +16,18 @@ const ellipse = (context, x, y, radiusX, radiusY, color, rotation = 0) => {
   context.fill();
 };
 
+// The sunflower head sprite, and the petal length it is drawn at inside it.
+const SUNFLOWER_SPRITE = 200;
+const SUNFLOWER_RADIUS = 92;
+
+// Sunflowers, because she loves them. They stand in the meadow from the first frame: a
+// few far off on the horizon and a tall clump in the near corner, clear of the plant, the
+// pond, the controls and the spot the seed lands on. Each is [x, y, height, head radius,
+// lean] in the plant's design units, the far ones measured from a point on the horizon
+// and the near ones from the bottom corner.
+const FAR_SUNFLOWERS = [[-24, 6, 44, 7, 3], [-6, 2, 56, 8, -2], [14, 7, 40, 6.5, 4], [34, 3, 50, 7.5, 1]];
+const NEAR_SUNFLOWERS = [[6, 0, 112, 14, -4], [30, 0, 156, 19, 8], [62, 0, 124, 16, -6], [88, 0, 64, 11, 5]];
+
 export const createMeadow = (canvas, bloomCanvas) => {
   const context = canvas.getContext('2d', { alpha: false });
   if (!context) return null;
@@ -32,7 +44,9 @@ export const createMeadow = (canvas, bloomCanvas) => {
   const blossomContext = blossom.getContext('2d');
   const seedSprite = document.createElement('canvas');
   const seedContext = seedSprite.getContext('2d');
-  if (!backdrop || !puffContext || !blossomContext || !seedContext) return null;
+  const sunflowerSprite = document.createElement('canvas');
+  const sunflowerContext = sunflowerSprite.getContext('2d');
+  if (!backdrop || !puffContext || !blossomContext || !seedContext || !sunflowerContext) return null;
   const state = { growth: 0, flight: 0, motion: true, breath: 0 };
   const pointer = { x: 0, y: 0, active: false, pressed: false, trailX: 0, trailY: 0 };
   const ripples = [];
@@ -301,6 +315,31 @@ export const createMeadow = (canvas, bloomCanvas) => {
     seedContext.quadraticCurveTo(-1, 25, -3, 35);
     seedContext.stroke();
     ellipse(seedContext, -3, 35, 1.15, 3.2, '#867449', .24);
+
+    // A sunflower head, drawn once and stamped wherever one stands: two rings of petals,
+    // then the seed disc packed on the golden angle, like the dandelion's florets.
+    sunflowerSprite.width = sunflowerSprite.height = SUNFLOWER_SPRITE;
+    sunflowerContext.translate(SUNFLOWER_SPRITE / 2, SUNFLOWER_SPRITE / 2);
+    [['#d6951c', SUNFLOWER_RADIUS, .21, .5], ['#f6c535', SUNFLOWER_RADIUS * .9, .19, 0]].forEach(([color, length, breadth, offset]) => {
+      const side = length * breadth;
+      sunflowerContext.fillStyle = color;
+      for (let index = 0; index < 21; index += 1) {
+        sunflowerContext.save();
+        sunflowerContext.rotate((index + offset) / 21 * Math.PI * 2);
+        sunflowerContext.beginPath();
+        sunflowerContext.moveTo(0, 0);
+        sunflowerContext.bezierCurveTo(side, -length * .25, side * .9, -length * .72, 0, -length);
+        sunflowerContext.bezierCurveTo(-side * .9, -length * .72, -side, -length * .25, 0, 0);
+        sunflowerContext.fill();
+        sunflowerContext.restore();
+      }
+    });
+    circle(sunflowerContext, 0, 0, SUNFLOWER_RADIUS * .44, '#553618');
+    circle(sunflowerContext, 0, 0, SUNFLOWER_RADIUS * .36, '#6b4422');
+    for (let index = 1; index <= 90; index += 1) {
+      const reach = SUNFLOWER_RADIUS * .34 * Math.sqrt(index / 90);
+      circle(sunflowerContext, Math.cos(index * 2.399963) * reach, Math.sin(index * 2.399963) * reach, SUNFLOWER_RADIUS * .028, '#b98040');
+    }
   };
 
   const drawLeaf = (x, y, length, angle, opacity = 1) => {
@@ -616,6 +655,26 @@ export const createMeadow = (canvas, bloomCanvas) => {
     context.restore();
   };
 
+  // Where each sunflower stands, in CSS pixels, for the current size of the page. In
+  // landscape the plant stands to the right, so the far ones move to the left of where
+  // the seed lands and the near clump crosses to the other corner.
+  let sunflowers = [];
+  const sunflowerPlan = () => {
+    const landscape = width > height * 1.7 && height < 500;
+    const scale = height / 800 * (width < 600 ? .92 : 1);
+    const farX = width * (landscape ? .41 : .77);
+    const farY = height * (landscape ? .74 : .72);
+    const side = landscape ? -1 : 1;
+    return [
+      ...FAR_SUNFLOWERS.map(([x, y, tall, radius, lean], index) => ({
+        x: farX + x * scale, y: farY + y * scale, tall: tall * scale, radius: radius * scale, lean: lean * scale, leaves: 1, phase: index * 1.9,
+      })),
+      ...NEAR_SUNFLOWERS.map(([x, y, tall, radius, lean], index) => ({
+        x: landscape ? width - x * scale : x * scale, y: height + y * scale, tall: tall * scale, radius: radius * scale, lean: lean * side * scale, leaves: 2, phase: 4 + index * 2.3,
+      })),
+    ];
+  };
+
   const pads = [[-.62, .1, 17, .4, 104], [.26, .46, 15, 2.2, 96], [.58, -.16, 12, 4.1, 110], [-.2, .56, 13, 1.1, 92], [-.04, -.3, 11, 5.2, 100]];
   const blooms = [[.18, -.05, 8, .9], [-.55, .3, 12, 1.35], [.6, .48, 10, 1.15]];
 
@@ -625,6 +684,7 @@ export const createMeadow = (canvas, bloomCanvas) => {
   const padNodes = pads.map(() => ({ x: 0, y: 0, vx: 0, vy: 0 }));
   const bloomNodes = blooms.map(() => ({ x: 0, y: 0, vx: 0, vy: 0 }));
   const stemNode = { x: 0, y: 0, vx: 0, vy: 0 };
+  const sunflowerNodes = [...FAR_SUNFLOWERS, ...NEAR_SUNFLOWERS].map(() => ({ x: 0, y: 0, vx: 0, vy: 0 }));
   // The phone moving pushes the same springs, and the water too, which sloshes: its light
   // slides across the surface and back. `jolt` is the latest push, see `shake`.
   const waterNode = { x: 0, y: 0, vx: 0, vy: 0 };
@@ -692,13 +752,21 @@ export const createMeadow = (canvas, bloomCanvas) => {
     };
   };
 
+  // Where a sunflower's head is this frame: its lean, the breeze, and whatever its spring
+  // is carrying from a finger or the phone moving.
+  const sunflowerHead = (plant, index) => {
+    const node = sunflowerNodes[index];
+    const breeze = Math.sin(time * .0008 + plant.phase) * .12 + Math.sin(time * .0013 + plant.phase * 1.7) * .05;
+    return { x: plant.x + plant.lean + breeze * plant.radius + node.x, y: plant.y - plant.tall + Math.abs(node.x) * .15 };
+  };
+
   const stepPhysics = (delta) => {
     spots = surfaceSpots();
     // Clamp the step so a long stall (a background tab, a slow frame) cannot fling the
     // springs past their rest position when the page comes back.
     const step = Math.min(2.2, delta / 16.67);
     if (!state.motion) {
-      [...padNodes, ...bloomNodes, stemNode, waterNode].forEach((node) => { node.x = 0; node.y = 0; node.vx = 0; node.vy = 0; });
+      [...padNodes, ...bloomNodes, ...sunflowerNodes, stemNode, waterNode].forEach((node) => { node.x = 0; node.y = 0; node.vx = 0; node.vy = 0; });
       return;
     }
     // A jolt only pushes while the phone is still reporting them; when the events stop,
@@ -721,6 +789,13 @@ export const createMeadow = (canvas, bloomCanvas) => {
     // Softer and far less damped than anything floating on it, so the water keeps
     // rocking for a few beats after the phone is still.
     spring(waterNode, joltX * .07, joltY * .04, step, .028, .09, 16);
+    // The sunflowers nod away from a finger and rock with the phone, each a little
+    // differently, and stand back up.
+    sunflowers.forEach((plant, index) => {
+      const head = sunflowerHead(plant, index);
+      const [forceX] = pushFrom(head.x, head.y, plant.radius + 50, .9);
+      spring(sunflowerNodes[index], forceX + joltX * (.06 + (index % 3) * .012), 0, step, .05, .26, plant.radius * 1.2);
+    });
 
     let stemForce = 0;
     const scale = height / 800 * (width < 600 ? .92 : 1);
@@ -843,6 +918,62 @@ export const createMeadow = (canvas, bloomCanvas) => {
     surface.sort((a, b) => a.y - b.y).forEach((item) => item.paint(item.y));
   };
 
+  const drawSunflowerLeaf = (x, y, length, angle, color) => {
+    context.save();
+    context.translate(x, y);
+    context.rotate(angle);
+    context.fillStyle = color;
+    context.beginPath();
+    context.moveTo(0, 0);
+    context.bezierCurveTo(length * .45, -length * .12, length * .5, -length * .62, 0, -length);
+    context.bezierCurveTo(-length * .5, -length * .62, -length * .45, -length * .12, 0, 0);
+    context.fill();
+    context.strokeStyle = '#46663a';
+    context.lineWidth = Math.max(.5, length * .04);
+    context.beginPath();
+    context.moveTo(0, 0);
+    context.lineTo(0, -length * .9);
+    context.stroke();
+    context.restore();
+  };
+
+  const drawSunflowers = () => {
+    // The sun the backdrop is lit from. Every head turns to face it.
+    const sunX = width * .7;
+    const sunY = height * .27;
+    sunflowers.forEach((plant, index) => {
+      const head = sunflowerHead(plant, index);
+      const turn = Math.atan2(sunY - head.y, sunX - head.x);
+      // The head nods off the top of its stem towards the sun, rather than sitting on it.
+      const neckX = head.x - Math.cos(turn) * plant.radius * .3;
+      const neckY = head.y - Math.sin(turn) * plant.radius * .3;
+      const bendX = plant.x + (head.x - plant.x) * .15;
+      const bendY = plant.y - plant.tall * .6;
+      context.strokeStyle = '#4f713b';
+      context.lineWidth = Math.max(1.1, plant.radius * .17);
+      context.lineCap = 'round';
+      context.beginPath();
+      context.moveTo(plant.x, plant.y);
+      context.quadraticCurveTo(bendX, bendY, neckX, neckY);
+      context.stroke();
+      for (let leaf = 0; leaf < plant.leaves; leaf += 1) {
+        const along = leaf ? .58 : .34;
+        const leafX = (1 - along) ** 2 * plant.x + 2 * (1 - along) * along * bendX + along * along * neckX;
+        const leafY = (1 - along) ** 2 * plant.y + 2 * (1 - along) * along * bendY + along * along * neckY;
+        const side = (leaf + index) % 2 ? 1 : -1;
+        drawSunflowerLeaf(leafX, leafY, plant.radius * (leaf ? 1.2 : 1.5), side * (leaf ? 1.25 : 1.75) + (head.x - plant.x - plant.lean) * .01, leaf ? '#6f8f45' : '#5d7f3e');
+      }
+      context.save();
+      context.translate(head.x, head.y);
+      context.rotate(turn);
+      // Seen a little from the side, since it is looking up and away at the sun.
+      const size = plant.radius / SUNFLOWER_RADIUS;
+      context.scale(size * .8, size);
+      context.drawImage(sunflowerSprite, -SUNFLOWER_SPRITE / 2, -SUNFLOWER_SPRITE / 2);
+      context.restore();
+    });
+  };
+
   const render = (timestamp = 0) => {
     frame = 0;
     if (destroyed || document.hidden) return;
@@ -855,6 +986,7 @@ export const createMeadow = (canvas, bloomCanvas) => {
       context.drawImage(background, 0, 0);
       context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
       drawPond();
+      drawSunflowers();
       drawFlower();
       const random = randomGenerator(875);
       for (let index = 0; index < 17; index += 1) {
@@ -885,6 +1017,7 @@ export const createMeadow = (canvas, bloomCanvas) => {
     canvas.width = background.width = Math.round(width * pixelRatio);
     canvas.height = background.height = Math.round(height * pixelRatio);
     dandelion?.resize(width, height, pixelRatio);
+    sunflowers = sunflowerPlan();
     paintBackground();
     requestRender();
   };

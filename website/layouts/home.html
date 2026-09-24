@@ -46,6 +46,8 @@
             <p id="wish-privacy">{{ T "wishPrivacy" }}</p>
           </div>
           <div class="finale" id="finale" hidden>
+            <p class="sunflower-line" id="sunflower-wish" hidden>{{ T "sunflowerWish" }}</p>
+            <p class="sunflower-line" id="sunflower-you" hidden>{{ T "sunflowerYou" }}</p>
             {{ with site.Params.recipient }}<p class="birthday-line" id="birthday-line" hidden>{{ T "birthdayGreeting" (dict "name" .) }}</p>{{ end }}
           </div>
         </div>
