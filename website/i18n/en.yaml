@@ -143,11 +143,7 @@ soundToggle:
 revealedTitle:
   other: "a little wish"
 birthdayGreeting:
-  other: "Happy birthday, {{ .name }}."
-sunflowerWish:
-  other: "The dandelion was for the wish."
-sunflowerYou:
-  other: "The sunflowers are for you."
+  other: "Advance happy birthday{{ with .name }}, {{ . }}{{ end }} 🌻"
 confirmTitle:
   other: "Just checking."
 confirmLead:

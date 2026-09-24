@@ -7,5 +7,5 @@ disableKinds:
   - term
   - RSS
 params:
-  # The name on the end card. Leave empty and the birthday line is not rendered at all.
+  # The name on the end card. Leave empty and the greeting goes without one.
   recipient: ""

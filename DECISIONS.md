@@ -373,7 +373,7 @@ rest of the touch field, so the permission is not asked for at all.
 She loves sunflowers, so they stand in the meadow from the first frame: four small ones
 far off on the right of the horizon and a tall clump in the near left corner. They are
 scenery, not a hint: nothing about them says dandelion, wish or birthday, so the blackout
-in 1 holds. The end card is where they are explained (9).
+in 1 holds. The only nod to them is the sunflower at the end of the greeting (9).
 
 They are placed clear of everything that moves or asks for a tap - the plant and its
 seedhead, the pond, the chapter dots, the wish controls, and the ring around the spot the
@@ -392,12 +392,11 @@ Everything before the flight stays universal. Sequenced under the signature, pla
 tender: "Happy birthday, <name>." in serif italic, nothing more. The existing
 "May your wishes come true" stays above it. Name lives as a single config value.
 
-Two lines now come before it and say what the sunflowers were: "The dandelion was for the
-wish." and "The sunflowers are for you." They are not tied to the name, so they show even
-while it is unset. The wordmark arrives at +350ms, the lines at +900ms and +1500ms, and the
-greeting at +2300ms, so the name is still the last thing to land and is in place before the
-replay pulse at 3.4s. In landscape the end card has to clear the pond, so the two lines run
-together as one.
+The greeting is now "Advance happy birthday 🌻", since it is opened before the day, and it
+shows whether or not the name is set; with one it reads "Advance happy birthday, <name> 🌻".
+The two lines that once came before it to explain the sunflowers are gone: the emoji says
+it. It lands at +1300ms after the wordmark at +350ms, as in 8, well before the replay pulse
+at 3.4s. In landscape it is set smaller and closer so the end card clears the pond.
 
 ## 10. Sound — synthesised now, swappable later
 Web Audio, no files, no network, no CSP change. A low wind bed that swells with growth,

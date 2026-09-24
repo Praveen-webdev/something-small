@@ -68,7 +68,6 @@ h1 em { font-weight: 400; color: #607450; letter-spacing: -.058em; }
 .wish-field p { font-size: .61rem; color: var(--muted); margin: .65rem 0 0; }
 .wish-echo { position: absolute; top: 45%; left: 0; right: 0; width: min(86%, 30rem); margin: 0 auto; text-align: center; font-family: var(--serif); font-style: italic; font-size: clamp(1.15rem, 4.6vw, 1.7rem); line-height: 1.5; color: #2c4634; text-wrap: balance; pointer-events: none; z-index: 4; }
 .finale { margin-top: 1.7rem; }
-.sunflower-line { margin: 0; font-family: var(--serif); font-style: italic; font-size: clamp(1rem, 4.1vw, 1.2rem); line-height: 1.5; color: var(--muted); }
 .birthday-line { margin: .95rem 0 0; font-family: var(--serif); font-style: italic; font-size: clamp(1.3rem, 5.4vw, 1.95rem); letter-spacing: -.03em; color: #3d5a3f; }
 .primary-button { border: 1px solid #35543a; background: var(--forest); color: var(--paper); border-radius: 3rem; padding: .9rem 1.6rem; min-height: 3.2rem; box-shadow: 0 4px 18px #213d2412, inset 0 1px 0 #ffffff15; display: inline-flex; align-items: center; justify-content: center; gap: .85rem; font-size: .81rem; font-weight: 500; transition: background .2s, transform .2s, box-shadow .2s; }
 .primary-button:hover { background: #28462e; transform: translateY(-2px); box-shadow: 0 6px 20px #213d2422; }
@@ -200,9 +199,8 @@ h1 em { font-weight: 400; color: #607450; letter-spacing: -.058em; }
   .eyebrow { font-size: .5rem; }
   .chapter-nav { display: none; }
   .wish-field p { font-size: .5rem; }
-  /* The end card has to clear the pond, so the two sunflower lines run together. */
+  /* The end card has to clear the pond. */
   .finale { margin-top: .55rem; }
-  .sunflower-line { display: inline; font-size: .8rem; }
   .birthday-line { margin-top: .3rem; font-size: 1.25rem; }
 }
 
