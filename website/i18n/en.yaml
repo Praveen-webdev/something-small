@@ -142,8 +142,6 @@ soundToggle:
   other: "Sound"
 revealedTitle:
   other: "a little wish"
-birthdayGreeting:
-  other: "Advance happy birthday{{ with .name }}, {{ . }}{{ end }} 🌻"
 confirmTitle:
   other: "Just checking."
 confirmLead:

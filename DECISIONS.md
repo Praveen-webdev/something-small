@@ -373,7 +373,7 @@ rest of the touch field, so the permission is not asked for at all.
 She loves sunflowers, so they stand in the meadow from the first frame: four small ones
 far off on the right of the horizon and a tall clump in the near left corner. They are
 scenery, not a hint: nothing about them says dandelion, wish or birthday, so the blackout
-in 1 holds. The only nod to them is the sunflower at the end of the greeting (9).
+in 1 holds.
 
 They are placed clear of everything that moves or asks for a tap - the plant and its
 seedhead, the pond, the chapter dots, the wish controls, and the ring around the spot the
@@ -387,16 +387,10 @@ the way the blossom and the puff are, so each frame only stamps it. Like the lot
 are painted live rather than baked into the backdrop, because they move: a breeze on
 `time`, and a spring each that a finger or the phone moving pushes, as in 8g and 8l.
 
-## 9. Birthday beat — only at the end
-Everything before the flight stays universal. Sequenced under the signature, plain and
-tender: "Happy birthday, <name>." in serif italic, nothing more. The existing
-"May your wishes come true" stays above it. Name lives as a single config value.
-
-The greeting is now "Advance happy birthday 🌻", since it is opened before the day, and it
-shows whether or not the name is set; with one it reads "Advance happy birthday, <name> 🌻".
-The two lines that once came before it to explain the sunflowers are gone: the emoji says
-it. It lands at +1300ms after the wordmark at +350ms, as in 8, well before the replay pulse
-at 3.4s. In landscape it is set smaller and closer so the end card clears the pond.
+## 9. Birthday beat — removed
+The end card carried a birthday greeting under the signature for a while, including an
+"Advance happy birthday 🌻" variant for opening before the day. That sentence is gone now;
+the finale is the wordmark alone, and the sunflowers in the meadow are scenery only, per 8m.
 
 ## 10. Sound — synthesised now, swappable later
 Web Audio, no files, no network, no CSP change. A low wind bed that swells with growth,

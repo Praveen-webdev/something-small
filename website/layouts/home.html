@@ -45,9 +45,7 @@
             <input id="wish-input" type="text" maxlength="240" autocomplete="off" placeholder="{{ T "wishPlaceholder" }}" aria-describedby="wish-privacy">
             <p id="wish-privacy">{{ T "wishPrivacy" }}</p>
           </div>
-          <div class="finale" id="finale" hidden>
-            <p class="birthday-line" id="birthday-line" hidden>{{ T "birthdayGreeting" (dict "name" site.Params.recipient) }}</p>
-          </div>
+          <div class="finale" id="finale" hidden></div>
         </div>
         <p class="wish-echo" id="wish-echo" aria-hidden="true" hidden></p>
         <button class="replay-spot" id="replay-spot" type="button" hidden>

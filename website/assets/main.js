@@ -9,7 +9,7 @@ const elements = Object.fromEntries([
   'scroll-prompt', 'scroll-label', 'wish-controls', 'microphone-button',
   'tap-button', 'microphone-note', 'blow-controls', 'blow-button', 'blow-note', 'countdown',
   'cancel-button', 'replay-spot', 'wish-echo', 'finale',
-  'birthday-line', 'brand', 'threshold', 'begin-button', 'option-noisy', 'option-private',
+  'brand', 'threshold', 'begin-button', 'option-noisy', 'option-private',
   'sound-toggle', 'confirm', 'confirm-list', 'confirm-continue', 'confirm-back', 'veil',
 ].map((id) => [id.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()), document.getElementById(id)]));
 const scenes = Object.fromEntries([...document.querySelectorAll('[data-scene]')].map((element) => [element.dataset.scene, element.dataset]));
@@ -168,8 +168,8 @@ const returnToWish = () => {
 };
 
 // The wordmark is withheld until the wish has flown, so the seed mark never gives the
-// meadow away. It arrives quietly in the header first and the greeting lands after it,
-// so the greeting is the last thing to appear. Once shown it stays; nothing is persisted.
+// meadow away. It arrives quietly in the header once the wish flies. Once shown it stays;
+// nothing is persisted.
 const revealFinale = () => {
   if (revealed) {
     elements.brand.hidden = false;
@@ -184,7 +184,6 @@ const revealFinale = () => {
     element.animate([{ opacity: 0, translate: '0 6px' }, { opacity: 1, translate: '0 0' }], { duration: 900, delay, easing: 'ease-out', fill: 'backwards' });
   };
   fadeIn(elements.brand, 350);
-  fadeIn(elements.birthdayLine, 1300);
 };
 
 // Replay lives on the meadow itself now: a pulse over the seed that came to rest.

@@ -6,6 +6,4 @@ disableKinds:
   - taxonomy
   - term
   - RSS
-params:
-  # The name on the end card. Leave empty and the greeting goes without one.
-  recipient: ""
+params: {}
